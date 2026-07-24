@@ -272,6 +272,49 @@ fn bundle_help_succeeds_and_verify_rejects_reproduction_only_inputs() {
 }
 
 #[test]
+fn selection_audit_cannot_accept_final_test_or_ood_inputs() {
+    for option in [
+        "--calibration",
+        "--id-test",
+        "--ood-development",
+        "--ood-test",
+        "--contrast-test",
+    ] {
+        let output = Command::new(binary())
+            .args(["selection", "audit", option, "forbidden.tsv"])
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert!(
+            String::from_utf8_lossy(&output.stderr)
+                .contains(&format!("unknown selection audit option `{option}`")),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+#[test]
+fn selection_audit_refuses_to_overwrite_its_dataset() {
+    let dataset = project_path("fixtures/intents-v3.tsv");
+    let before = fs::read(&dataset).unwrap();
+    let output = Command::new(binary())
+        .args([
+            "selection",
+            "audit",
+            "--dataset",
+            dataset.to_str().unwrap(),
+            "--output",
+            dataset.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("collides"));
+    assert_eq!(fs::read(&dataset).unwrap(), before);
+}
+
+#[test]
 fn open_set_bundle_reproduces_and_serves_bounded_jsonl_predictions() {
     let directory = TestDirectory::new();
     let bundle = directory.path().join("bundle-v3");

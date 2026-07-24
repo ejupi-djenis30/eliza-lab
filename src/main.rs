@@ -3,9 +3,10 @@ use eliza_lab::ml::{
     OodMetrics, TrainingConfig,
 };
 use eliza_lab::open_set::{
-    embedded_bundle, predict_jsonl, reproduce_bundle, run_open_set_experiment, verify_bundle,
-    write_bundle, CompiledModel, GroupedDataset, OpenSetContrastDataset, OpenSetOodDataset,
-    OpenSetTrainingConfig, DEFAULT_BOOTSTRAP_RESAMPLES,
+    embedded_bundle, predict_jsonl, reproduce_bundle, run_open_set_experiment,
+    run_selection_stability_audit, verify_bundle, write_bundle, write_selection_audit_report,
+    CompiledModel, GroupedDataset, OpenSetContrastDataset, OpenSetOodDataset,
+    OpenSetTrainingConfig, SelectionAuditConfig, SelectionAuditPool, DEFAULT_BOOTSTRAP_RESAMPLES,
 };
 use eliza_lab::robustness::{audit_bundle_id_test, audit_jsonl, RobustnessGate};
 use eliza_lab::{ElizaEngine, Reply, MAX_INPUT_CHARS};
@@ -25,6 +26,7 @@ const DEFAULT_V3_OOD_DEVELOPMENT: &str = "fixtures/ood-dev-v3.tsv";
 const DEFAULT_V3_OOD_TEST: &str = "fixtures/ood-test-v3.tsv";
 const DEFAULT_V3_CONTRAST_TEST: &str = "fixtures/contrast-test-v3.tsv";
 const DEFAULT_V3_BUNDLE: &str = "artifacts/eliza-open-set-v3";
+const DEFAULT_SELECTION_AUDIT_REPORT: &str = "reports/selection-stability-v1.json";
 const MAX_INPUT_BYTES: usize = MAX_INPUT_CHARS * 4;
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -87,6 +89,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     match arguments.first().map(String::as_str) {
         Some("train") => train_command(&arguments[1..]),
         Some("train-v3") => train_v3_command(&arguments[1..]),
+        Some("selection") => selection_command(&arguments[1..]),
         Some("evaluate") => evaluate_command(&arguments[1..]),
         Some("infer") => infer_command(&arguments[1..]),
         Some("infer-batch") => infer_batch_command(&arguments[1..]),
@@ -105,6 +108,76 @@ fn run() -> Result<(), Box<dyn Error>> {
         .into()),
         None => interactive(None),
     }
+}
+
+fn selection_command(arguments: &[String]) -> Result<(), Box<dyn Error>> {
+    let operation = arguments
+        .first()
+        .map(String::as_str)
+        .ok_or_else(|| CliError("selection requires `audit`".into()))?;
+    if matches!(operation, "--help" | "-h" | "help") {
+        print_selection_help();
+        return Ok(());
+    }
+    if operation != "audit" {
+        return Err(CliError(format!(
+            "unknown selection operation `{operation}`; expected `audit`"
+        ))
+        .into());
+    }
+    let mut dataset_path = None;
+    let mut output_path = PathBuf::from(DEFAULT_SELECTION_AUDIT_REPORT);
+    let mut config = SelectionAuditConfig::default();
+    let mut index = 1;
+    while index < arguments.len() {
+        match arguments[index].as_str() {
+            "--dataset" => dataset_path = Some(PathBuf::from(option_value(arguments, &mut index)?)),
+            "--output" => output_path = PathBuf::from(option_value(arguments, &mut index)?),
+            "--bootstrap-resamples" => {
+                config.bootstrap_resamples =
+                    parse_option(arguments, &mut index, "bootstrap resamples")?
+            }
+            "--help" | "-h" => {
+                print_selection_help();
+                return Ok(());
+            }
+            option => {
+                return Err(CliError(format!("unknown selection audit option `{option}`")).into())
+            }
+        }
+        index += 1;
+    }
+    if let Some(dataset_path) = dataset_path.as_deref() {
+        ensure_distinct_paths(&[
+            ("selection dataset", dataset_path),
+            ("selection report", &output_path),
+        ])?;
+    }
+    let dataset = match dataset_path.as_deref() {
+        Some(path) => GroupedDataset::read(path)?,
+        None => GroupedDataset::bundled()?,
+    };
+    let pool = SelectionAuditPool::from_dataset(&dataset, config.training.seed)?;
+    let report = run_selection_stability_audit(&pool, config)?;
+    let digest = write_selection_audit_report(&output_path, &report)?;
+    println!("report       {}", output_path.display());
+    println!("sha256       {digest}");
+    println!(
+        "pool         {} examples / {} families / {} labels",
+        report.pool.example_count, report.pool.family_count, report.pool.label_count
+    );
+    println!(
+        "nested CV    {} outer folds / {} inner folds / {} model fits",
+        report.outer_folds, report.inner_folds, report.model_fits
+    );
+    println!(
+        "OOF          accuracy={:.4} macro-f1={:.4} nll={:.4} brier={:.4}",
+        report.metrics.accuracy,
+        report.metrics.macro_f1,
+        report.metrics.negative_log_likelihood,
+        report.metrics.multiclass_brier
+    );
+    Ok(())
 }
 
 fn train_v3_command(arguments: &[String]) -> Result<(), Box<dyn Error>> {
@@ -1011,6 +1084,7 @@ fn print_help() {
          USAGE\n\
            eliza-lab train [options]\n\
            eliza-lab train-v3 [options]\n\
+           eliza-lab selection audit [options]\n\
            eliza-lab evaluate [options]\n\
            eliza-lab infer [options] <fictional prompt>\n\
            eliza-lab infer-batch [--bundle PATH] < input.jsonl\n\
@@ -1020,6 +1094,17 @@ fn print_help() {
            eliza-lab dataset check [--dataset PATH]\n\
            eliza-lab --once <prompt>       Legacy rule-only response\n\n\
          Run a command with --help for details. With no command, the rule-only shell starts."
+    );
+}
+
+fn print_selection_help() {
+    println!(
+        "Usage: eliza-lab selection audit [options]\n\
+         Runs nested group cross-validation on the train + development selection pool only.\n\
+         Calibration, ID-test, OOD and contrast partitions are not accepted by this command.\n\
+         --dataset PATH              Grouped TSV input (default embedded {DEFAULT_V3_DATASET})\n\
+         --output PATH               Canonical JSON report (default {DEFAULT_SELECTION_AUDIT_REPORT})\n\
+         --bootstrap-resamples N     Family-clustered 95% interval resamples"
     );
 }
 

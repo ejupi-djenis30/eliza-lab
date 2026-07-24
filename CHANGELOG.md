@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 1.5.0 — 2026-07-24
+
+- Add a typed `SelectionAuditPool` containing only the 385 train and development rows. Run eleven
+  outer family holdouts and five inner group-stratified folds across all nine declared candidates,
+  producing one out-of-family prediction for every row without exposing calibration, ID-test, OOD
+  or contrast inputs to the audit API.
+- Persist a canonical 506-fit selection-stability report with the complete OOF probability ledger,
+  candidate ranks and selection frequencies, per-class metrics, confusion matrix and 1,000
+  deterministic family-cluster bootstrap intervals.
+- Report the actual, lower pre-test result—`0.626` accuracy and `0.626` macro F1—and the movement in
+  candidate choice instead of presenting only the stronger frozen ID-test result.
+- Pin and semantically reconstruct the audit in the browser, add a responsive evidence section to
+  Pages, and reproduce the report byte-for-byte in CI, Pages and release quality.
+- Write the report atomically with persisted-byte verification, reject input/output path aliases,
+  and make final-test and OOD flags explicit CLI errors.
+
 ## 1.4.0 — 2026-07-23
 
 - Add a local metamorphic robustness audit for the verified open-set classifier. Measure label,

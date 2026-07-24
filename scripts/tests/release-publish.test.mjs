@@ -17,7 +17,7 @@ import {
 } from "../release-publish.mjs";
 
 const repository = "ejupi-djenis30/PsychologistRustBot";
-const tag = "v1.4.0";
+const tag = "v1.5.0";
 const expectedCommit = "a".repeat(40);
 const recoveryWorkflowCommit = "b".repeat(40);
 const signedTagObject = "c".repeat(40);

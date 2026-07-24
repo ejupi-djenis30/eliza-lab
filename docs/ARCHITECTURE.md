@@ -9,18 +9,24 @@ through the explicit `--legacy-v1` compatibility flag.
 1. `src/open_set.rs` owns the v3 dataset contracts, typed partitions, model selection, training,
    calibration, abstention policy, evaluation, baselines, bootstrap, artifact verification and
    compiled inference.
-2. `src/robustness.rs` owns bounded JSONL robustness input, deterministic metamorphic
+2. `src/open_set/selection_audit.rs` owns the train-plus-development capability, nested
+   family-disjoint cross-validation, OOF ledger and family-cluster uncertainty report. Final-test
+   and OOD types are not part of this module's public input.
+3. `src/robustness.rs` owns bounded JSONL robustness input, deterministic metamorphic
    transformations, aggregate stability metrics and optional release gates. Caller-provided cases
    use a compiled model; the frozen ID-test path accepts and consumes only a `VerifiedBundle`.
    Neither path can mutate or select a model.
-3. `src/lib.rs` owns bounded dialogue behaviour. Empty or oversized input and explicit safety-stop
+4. `src/lib.rs` owns bounded dialogue behaviour. Empty or oversized input and explicit safety-stop
    phrases are handled before learned inference.
-4. `src/main.rs` exposes v3 training, verification, reproduction, batch inference, aggregate
-   robustness auditing and interactive commands. Legacy inference must be requested explicitly.
-5. `site/open-set-engine.mjs` verifies the same five-file bundle, reproduces its prediction
+5. `src/main.rs` exposes v3 training, selection stability, verification, reproduction, batch
+   inference, aggregate robustness auditing and interactive commands. Legacy inference must be
+   requested explicitly.
+6. `site/open-set-engine.mjs` verifies the same five-file bundle, reproduces its prediction
    ledgers and runs inference in the browser. A missing trust root, digest mismatch or semantic
    mismatch disables the interface.
-6. `site/app.js` renders only a successfully verified v3 runtime. Prompts stay in the tab.
+7. `site/selection-audit.mjs` pins the canonical audit digest and reconstructs the complete OOF
+   confusion matrix, probability losses, fold metrics, candidate ranks and selection counts.
+8. `site/app.js` renders only successfully verified evidence. Prompts stay in the tab.
 
 ## Experiment flow
 
@@ -54,6 +60,25 @@ The role-specific Rust types are capabilities, not labels on arbitrary slices:
 
 The development partition serves both candidate selection and threshold selection. That can still
 create selection optimism, so the limitation is recorded in the artifact.
+
+## Pre-test selection audit
+
+The audit is a parallel evidence path. `SelectionAuditPool::from_dataset` follows the frozen
+four-way split rule but retains only train and development: 385 rows, 77 families and eleven
+families per label. Its fingerprint derives the audit seed. The capability contains no
+calibration, ID-test, OOD or contrast field.
+
+Eleven outer folds each hold out one family per label. For each outer fold, five inner folds divide
+the remaining ten families per label evenly and evaluate the complete nine-candidate grid. The
+selected candidate is refit on the outer training population and predicts the 35 outer rows once.
+The final 385-row OOF ledger therefore contains no prediction from a model trained on that row's
+family.
+
+The canonical report records both outer and inner family assignments, training configuration,
+candidate metrics and ranks, selection frequencies, the OOF probability ledger, confusion matrix,
+per-class metrics and 1,000 family-cluster bootstrap intervals. CI, Pages and release quality rerun
+all 506 fits in release mode and compare the resulting bytes with the checked-in report. This audit
+measures selection stability only; it neither changes nor reopens the frozen v3 test results.
 
 ## Model and policy
 

@@ -50,6 +50,9 @@ jobs:
           diff --recursive --brief artifacts/eliza-open-set-v3 target/reproduced-open-set-v3
           cargo run --locked -- bundle verify --bundle artifacts/eliza-open-set-v3
           cargo run --locked -- bundle reproduce --bundle artifacts/eliza-open-set-v3
+          cargo run --release --locked -- selection audit \
+            --output target/selection-stability-v1.json
+          cmp reports/selection-stability-v1.json target/selection-stability-v1.json
           cargo run --locked -- robustness audit --bundle-id-test \
             > target/robustness-id-test-report.json
           node scripts/verify-robustness-report.mjs \

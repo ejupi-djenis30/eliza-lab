@@ -15,6 +15,13 @@ use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use unicode_normalization::UnicodeNormalization;
 
+mod selection_audit;
+pub use selection_audit::{
+    run_selection_stability_audit, selection_audit_report_bytes, write_selection_audit_report,
+    SelectionAuditConfig, SelectionAuditPool, SelectionAuditReport,
+    DEFAULT_SELECTION_AUDIT_BOOTSTRAP_RESAMPLES,
+};
+
 pub const OPEN_SET_SCHEMA_VERSION: u32 = 3;
 pub const OPEN_SET_MODEL_VERSION: &str = "3.0.0";
 pub const OPEN_SET_MODEL_KIND: &str = "eliza-open-set-linear";

@@ -1,5 +1,6 @@
 import { ElizaEngine, MAX_INPUT_CHARS } from "./engine.mjs?v=3.0.0-1";
 import { loadOpenSetBundle } from "./open-set-engine.mjs?v=3.0.0-1";
+import { loadSelectionAudit } from "./selection-audit.mjs?v=1.0.0-1";
 
 const MAX_TRANSCRIPT_MESSAGES = 80;
 const form = document.querySelector("[data-form]");
@@ -16,6 +17,7 @@ const traceStatus = document.querySelector("[data-trace-status]");
 const labShell = document.querySelector(".lab-shell");
 const gatedControls = document.querySelectorAll("[data-model-gated]");
 const v3Status = document.querySelector("[data-v3-status]");
+const selectionStatus = document.querySelector("[data-selection-status]");
 
 let engine = null;
 let activeModel = null;
@@ -132,6 +134,47 @@ const renderOpenSetReport = (report) => {
   if (v3Status) {
     v3Status.textContent = `VERIFIED MODEL ${report.model_version} / ${bootstrap.resamples} BOOTSTRAP RESAMPLES`;
     v3Status.dataset.state = "ready";
+  }
+};
+
+const renderSelectionAudit = (report) => {
+  const metrics = report.metrics;
+  const bootstrap = report.bootstrap_95;
+  const mostSelected = [...report.candidate_stability].sort(
+    (left, right) =>
+      right.selected_folds - left.selected_folds ||
+      left.candidate_id.localeCompare(right.candidate_id),
+  )[0];
+  setV3Text(
+    '[data-selection-metric="accuracy"]',
+    `${(finiteMetric(metrics.accuracy, "selection accuracy") * 100).toFixed(1)}%`,
+  );
+  setV3Text(
+    '[data-selection-metric="macro-f1"]',
+    finiteMetric(metrics.macro_f1, "selection macro F1").toFixed(3),
+  );
+  setV3Text(
+    '[data-selection-metric="interval"]',
+    `${(finiteMetric(bootstrap.accuracy.lower_95, "selection lower") * 100).toFixed(1)}–${(finiteMetric(bootstrap.accuracy.upper_95, "selection upper") * 100).toFixed(1)}%`,
+  );
+  setV3Text(
+    '[data-selection-metric="candidate"]',
+    `${mostSelected.selected_folds} / ${report.outer_folds}`,
+  );
+  if (selectionStatus) {
+    selectionStatus.textContent = `${report.model_fits} FITS / ${report.pool.family_count} FAMILIES / COMPLETE OOF LEDGER VERIFIED`;
+    selectionStatus.dataset.state = "ready";
+  }
+};
+
+const initializeSelectionAudit = async () => {
+  try {
+    renderSelectionAudit(await loadSelectionAudit("./data/selection-stability-v1.json"));
+  } catch {
+    if (selectionStatus) {
+      selectionStatus.textContent = "SELECTION AUDIT VERIFICATION FAILED";
+      selectionStatus.dataset.state = "error";
+    }
   }
 };
 
@@ -255,3 +298,4 @@ resetButton?.addEventListener("click", () => {
 });
 
 void initializeModel();
+void initializeSelectionAudit();

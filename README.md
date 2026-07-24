@@ -69,6 +69,37 @@ cargo run --locked -- bundle reproduce --bundle artifacts/eliza-open-set-v3
 `train-v3` replaces only an empty destination or a bundle that already passes the complete v3
 verification contract. It will not repurpose an unrelated non-empty directory.
 
+## Pre-test selection stability
+
+The frozen bundle still uses one development partition for candidate selection and threshold
+selection. The separate [`selection-stability-v1.json`](reports/selection-stability-v1.json) report
+measures how stable the model-grid choice is before any final test is available:
+
+- its `SelectionAuditPool` contains only the 315 training and 70 development rows;
+- eleven outer folds each hold out one whole family per label;
+- five inner group-stratified folds compare all nine declared candidates;
+- every one of the 385 rows receives exactly one prediction from a model that did not see its
+  family;
+- the constructor uses the fixed supervised split only to isolate train + development; calibration
+  and ID-test are then discarded, while OOD and contrast data are not inputs or CLI options.
+
+The actual out-of-fold result is `0.626` accuracy and `0.626` macro F1. The family-clustered 95%
+intervals are `[0.571, 0.686]` and `[0.573, 0.682]`. Candidate choice also moves across folds: the
+most frequently selected configuration wins six of eleven, not all eleven. This is intentionally
+less flattering than the final ID-test score and is the reason the report exists.
+These are raw candidate-label metrics before temperature calibration or abstention-policy
+selection, not coverage estimates.
+
+Reproduce the canonical 506-fit audit locally:
+
+```bash
+cargo run --release --locked -- selection audit \
+  --output reports/selection-stability-v1.json
+```
+
+The command derives its audit seed from the selection-pool fingerprint and writes the report
+atomically, then reads the persisted bytes back before returning their SHA-256.
+
 Run bounded batch inference without validating or indexing the vocabulary again for every row:
 
 ```bash
@@ -130,7 +161,7 @@ gh attestation verify <downloaded-archive> --repo ejupi-djenis30/PsychologistRus
 Extract the archive and run the included `eliza-lab` executable. Open-set bundle model `3.0.0`, the
 legacy `1.0.0` compatibility artifact and synthetic fixtures are embedded, so inference,
 verification and retraining need no separate model download.
-The application version (`1.4.0`) and bundled model versions are intentionally independent.
+The application version (`1.5.0`) and bundled model versions are intentionally independent.
 
 ## Run it
 
@@ -181,6 +212,8 @@ cargo clippy --all-targets --locked -- -D warnings
 cargo test --all --locked
 cargo run --locked -- bundle verify --bundle artifacts/eliza-open-set-v3
 cargo run --locked -- bundle reproduce --bundle artifacts/eliza-open-set-v3
+cargo run --release --locked -- selection audit \
+  --output target/selection-stability-v1.json
 printf '%s\n' '{"id":"fictional-01","text":"I intend to test one next step"}' \
   | cargo run --locked -- robustness audit
 cargo run --locked -- robustness audit --bundle-id-test \
@@ -216,7 +249,7 @@ GitHub Release assembled by the workflow.
 
 A release can only be published from a `v*` tag pushed for the version in `Cargo.toml`, with a dated
 section for that version in `CHANGELOG.md` and no pending text under `Unreleased`. For example,
-version `1.4.0` accepts `v1.4.0` and rejects every other tag. The workflow assembles all four native
+version `1.5.0` accepts `v1.5.0` and rejects every other tag. The workflow assembles all four native
 archives from verified file-descriptor snapshots, creates a consolidated `SHA256SUMS` file covering
 every release asset, and adds GitHub provenance attestations. The publish job independently verifies
 each attestation against this repository, workflow, tag ref, and source commit before it can touch a
@@ -260,22 +293,24 @@ To test a proposed tag without creating one, start the **Release** workflow manu
 the tag in `release_tag`, or run:
 
 ```bash
-node scripts/release-contract.mjs verify --tag v1.4.0
+node scripts/release-contract.mjs verify --tag v1.5.0
 ```
 
 ## Architecture
 
 ```text
 src/open_set.rs             v3 data contracts, typed splits, training, evaluation, bundles, inference
+src/open_set/selection_audit.rs typed pre-test pool, nested group CV, OOF ledger and intervals
 src/robustness.rs           bounded aggregate-only metamorphic robustness audit and release gates
 src/ml.rs                   explicit legacy-v1 compatibility implementation
 src/lib.rs                  hard boundaries and dialogue routing
-src/main.rs                 train / evaluate / infer / chat CLI
+src/main.rs                 train / selection audit / evaluate / infer / chat CLI
 fixtures/                   supervised, OOD, contrast, and parity corpora
 models/                     versioned learned artifact
-reports/                    generated split, calibration, and metrics
+reports/                    generated split, calibration, metrics, and selection-stability evidence
 artifacts/eliza-open-set-v3 SHA-256-linked model, policy, metrics, and split plan
 site/open-set-engine.mjs    trust-root verification and browser v3 inference
+site/selection-audit.mjs    pinned digest and semantic reconstruction of the OOF report
 docs/                       model card, dataset contract, architecture
 ```
 
