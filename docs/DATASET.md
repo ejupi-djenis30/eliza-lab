@@ -60,6 +60,28 @@ Every label appears in every partition. No family crosses a partition. The seed 
 assignment are stored in `split-plan.json`; the plan's SHA-256 is linked from the model, policy,
 metrics and bundle manifest.
 
+## Selection-audit pool
+
+The `selection audit` command reconstructs a capability from only the train and development
+assignments:
+
+| Audit population | Families | Rows | Use |
+| --- | ---: | ---: | --- |
+| Train + development | 77 | 385 | Nested candidate-stability audit |
+| Calibration + ID-test | 28 | 140 | Parsed to reproduce the split, then discarded |
+| Both OOD populations + contrast test | 24 OOD families + 14 pairs | 100 | Not audit inputs |
+
+There are eleven available families per label. The outer loop uses eleven folds, each holding out
+one family per label. The ten remaining families per label divide evenly across five inner folds.
+Each inner holdout therefore contains fourteen families and 70 rows; each outer holdout contains
+seven families and 35 rows.
+
+The pool fingerprint covers only the 385 included rows. Its first 52 bits derive the JSON-safe audit
+seed. The report records outer assignments, every inner-candidate metric, the candidate chosen per
+outer fold and one out-of-fold probability vector per row. A label-stratified bootstrap resamples
+whole families, not paraphrases. Altering a calibration, final-test, OOD or contrast row cannot
+become an audit input.
+
 ## OOD populations
 
 [`fixtures/ood-dev-v3.tsv`](../fixtures/ood-dev-v3.tsv) and

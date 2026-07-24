@@ -10,9 +10,16 @@ import { chromium } from "playwright";
 const repositoryRoot = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const siteRoot = resolve(repositoryRoot, "site");
 const artifactRoot = resolve(repositoryRoot, "artifacts/eliza-open-set-v3");
+const selectionReport = resolve(repositoryRoot, "reports/selection-stability-v1.json");
 const mountPath = "/PsychologistRustBot";
 const widths = [320, 375, 620, 621, 960, 961, 1440];
-const navigationTargets = ["#experiment", "#method", "#open-set-v3", "#safety"];
+const navigationTargets = [
+  "#experiment",
+  "#method",
+  "#open-set-v3",
+  "#selection-stability",
+  "#safety",
+];
 const measuredSelectors = [
   ".site-header",
   ".brand",
@@ -23,6 +30,7 @@ const measuredSelectors = [
   ".pipeline-map",
   ".v3-protocol",
   ".report-grid",
+  ".selection-audit-grid",
   ".safety",
   "footer",
 ];
@@ -59,6 +67,7 @@ function resolveRequestPath(requestUrl) {
   if (requestedPath.startsWith(artifactPrefix)) {
     return containedPath(artifactRoot, requestedPath.slice(artifactPrefix.length - 1));
   }
+  if (requestedPath === "/data/selection-stability-v1.json") return selectionReport;
   return containedPath(siteRoot, requestedPath);
 }
 
@@ -108,7 +117,7 @@ try {
     if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
   });
   const cssResponsePromise = page.waitForResponse((response) =>
-    response.url().endsWith(`${mountPath}/styles.css?v=1.4.0`),
+    response.url().endsWith(`${mountPath}/styles.css?v=1.5.0`),
   );
   const navigationResponse = await page.goto(baseUrl, { waitUntil: "networkidle" });
   const cssResponse = await cssResponsePromise;
@@ -116,11 +125,12 @@ try {
   assert.equal(navigationResponse?.status(), 200, "Site document must load successfully");
   assert.equal(cssResponse.status(), 200, "Site stylesheet must load successfully");
   assert.match(cssResponse.headers()["content-type"] ?? "", /^text\/css\b/);
-  assert.equal(await page.locator(".site-header nav a").count(), 4);
+  assert.equal(await page.locator(".site-header nav a").count(), 5);
   await page.waitForFunction(
     () =>
       document.querySelector(".lab-shell")?.getAttribute("aria-busy") === "false" &&
-      document.querySelector("[data-model-status]")?.textContent?.includes("VERIFIED"),
+      document.querySelector("[data-model-status]")?.textContent?.includes("VERIFIED") &&
+      document.querySelector("[data-selection-status]")?.dataset.state === "ready",
   );
   assert.match(
     (await page.locator("[data-model-status]").textContent()) ?? "",
@@ -188,7 +198,7 @@ try {
     }
 
     if (width <= 960) {
-      assert.equal(geometry.navLinks.length, 4, `${width}px: all navigation targets must remain visible`);
+      assert.equal(geometry.navLinks.length, 5, `${width}px: all navigation targets must remain visible`);
       for (const [index, link] of geometry.navLinks.entries()) {
         assert(link.width > 0, `${width}px: navigation target ${index + 1} has no width`);
         assert(link.height >= 44, `${width}px: navigation target ${index + 1} is under 44px`);

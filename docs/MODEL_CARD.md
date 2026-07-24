@@ -62,6 +62,37 @@ Temperature scaling sees only calibration rows. The abstention policy comes from
 grid over confidence and top-two probability margin. It sees development and OOD-development, not
 either final test.
 
+### Nested pre-test stability audit
+
+`reports/selection-stability-v1.json` is a separate diagnostic, not part of the frozen v3 bundle and
+not a second final evaluation. A role-specific `SelectionAuditPool` combines only train and
+development: 385 rows in 77 five-row families, eleven families for each of seven labels.
+The constructor reproduces the fixed supervised split and discards calibration and ID-test before
+building the capability. Fitting, selection and scoring therefore receive only train + development;
+OOD-development, OOD-test and contrast-test are not inputs or CLI options.
+
+The audit runs eleven outer folds. Each outer fold holds out one complete family per label. Within
+the remaining families, five group-stratified inner folds evaluate all nine feature-budget/L2
+candidates. The chosen candidate is refit on that outer training fold and predicts the 35 unseen
+rows once. The resulting ledger therefore has one out-of-family prediction for every selection-pool
+row.
+
+The canonical 506-fit run reports:
+
+| Pre-test diagnostic | Result |
+| --- | ---: |
+| Out-of-fold accuracy | `0.626` [`0.571`, `0.686`] |
+| Out-of-fold macro F1 | `0.626` [`0.573`, `0.682`] |
+| Out-of-fold negative log-likelihood | `1.437` [`1.386`, `1.489`] |
+| Out-of-fold multiclass Brier | `0.661` [`0.639`, `0.683`] |
+| Most frequently selected candidate | 512 features, L2 `0.002` in `6 / 11` folds |
+
+Intervals use 1,000 deterministic, label-stratified family-cluster resamples. The movement in
+candidate choice and the lower out-of-fold score are evidence of selection uncertainty. They do
+not replace the frozen test results and are not a new performance claim. Candidates are evaluated
+before temperature calibration and abstention-policy selection, so these are closed-set label
+metrics rather than decision-coverage estimates.
+
 ## Evaluation contract
 
 The checked-in `metrics.json` contains:
@@ -134,7 +165,8 @@ the resulting bundle.
 
 - Synthetic English prompts cannot establish real-world generalization.
 - Development is reused for model candidate and threshold selection, so selection optimism remains
-  possible.
+  possible. The separate nested audit measures that risk but does not retroactively change the
+  frozen procedure.
 - OOD has only six broader test domains and three designed strata.
 - A unigram baseline can reveal lexical shortcuts, but it cannot prove their absence.
 - The paired contrast set is small, synthetic and source-authored; it is not an external benchmark.

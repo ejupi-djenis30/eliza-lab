@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Optional tag to validate against Cargo.toml (for example v1.4.0)"
+        description: "Optional tag to validate against Cargo.toml (for example v1.5.0)"
         required: false
         type: string
 
@@ -87,6 +87,9 @@ jobs:
           diff --recursive --brief artifacts/eliza-open-set-v3 target/release-open-set-v3
           cargo run --locked -- bundle verify --bundle artifacts/eliza-open-set-v3
           cargo run --locked -- bundle reproduce --bundle artifacts/eliza-open-set-v3
+          cargo run --release --locked -- selection audit \
+            --output target/release-selection-stability-v1.json
+          cmp reports/selection-stability-v1.json target/release-selection-stability-v1.json
           cargo run --locked -- robustness audit --bundle-id-test \
             > target/release-robustness-id-test-report.json
           node scripts/verify-robustness-report.mjs \

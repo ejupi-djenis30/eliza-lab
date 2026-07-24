@@ -42,7 +42,7 @@ concurrency:
 
 jobs:
   build:
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -72,6 +72,9 @@ jobs:
           diff --recursive --brief artifacts/eliza-open-set-v3 target/pages-open-set-v3
           cargo run --locked -- bundle verify --bundle artifacts/eliza-open-set-v3
           cargo run --locked -- bundle reproduce --bundle artifacts/eliza-open-set-v3
+          cargo run --release --locked -- selection audit \
+            --output target/pages-selection-stability-v1.json
+          cmp reports/selection-stability-v1.json target/pages-selection-stability-v1.json
           cargo run --locked -- robustness audit --bundle-id-test \
             > target/pages-robustness-id-test-report.json
           node scripts/verify-robustness-report.mjs \
@@ -83,6 +86,7 @@ jobs:
           mkdir -p pages-dist/data
           cp -R site/. pages-dist/
           cp -R artifacts/eliza-open-set-v3 pages-dist/data/open-set-v3
+          cp reports/selection-stability-v1.json pages-dist/data/selection-stability-v1.json
       - run: node site/scripts/validate-site.mjs --stage pages-dist
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

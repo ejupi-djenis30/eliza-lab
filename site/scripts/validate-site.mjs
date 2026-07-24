@@ -8,12 +8,17 @@ import {
   EXPECTED_BUNDLE_MANIFEST_SHA256,
   loadOpenSetBundle,
 } from "../open-set-engine.mjs";
+import {
+  EXPECTED_SELECTION_AUDIT_SHA256,
+  verifySelectionAudit,
+} from "../selection-audit.mjs";
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = path.resolve(siteRoot, "..");
 const html = await readFile(path.join(siteRoot, "index.html"), "utf8");
 const app = await readFile(path.join(siteRoot, "app.js"), "utf8");
 const openSetEngine = await readFile(path.join(siteRoot, "open-set-engine.mjs"), "utf8");
+const selectionAuditEngine = await readFile(path.join(siteRoot, "selection-audit.mjs"), "utf8");
 const styles = await readFile(path.join(siteRoot, "styles.css"), "utf8");
 const socialPreviewSource = await readFile(
   path.join(siteRoot, "assets/social-preview-source.svg"),
@@ -32,6 +37,10 @@ const v3PolicyBytes = v3Bytes.get("policy.json");
 const v3Manifest = JSON.parse(v3ManifestBytes);
 const v3Metrics = JSON.parse(v3MetricsBytes);
 const v3Policy = JSON.parse(v3PolicyBytes);
+const selectionAuditBytes = await readFile(
+  path.join(repositoryRoot, "reports/selection-stability-v1.json"),
+);
+const selectionAudit = verifySelectionAudit(JSON.parse(selectionAuditBytes));
 const verifiedBrowserBundle = await loadOpenSetBundle("https://static.invalid/open-set-v3", {
   crypto: webcrypto,
   fetch: async (url) => {
@@ -61,6 +70,7 @@ assert.match(html, /name="twitter:image:alt"/);
 assert.match(html, /type="module" src="app\.js(?:\?[^"\s]+)?"/);
 assert.match(app, /\.\/engine\.mjs\?v=[^"\s]+/);
 assert.match(app, /\.\/open-set-engine\.mjs\?v=[^"\s]+/);
+assert.match(app, /\.\/selection-audit\.mjs\?v=[^"\s]+/);
 assert.doesNotMatch(app, /\.\/ml-engine\.mjs/);
 assert.doesNotMatch(html, /(?:src|href)="\//, "Assets must remain relative for project Pages");
 assert.ok(
@@ -101,6 +111,17 @@ for (const file of v3Inventory) {
   assert.match(openSetEngine, new RegExp(file.replace(".", "\\.")), `The bundle loader must include ${file}`);
 }
 assert.match(app, /topFeatures/, "The browser trace must expose feature contributions");
+assert.match(app, /loadSelectionAudit\("\.\/data\/selection-stability-v1\.json"\)/);
+assert.match(html, /The less flattering result/);
+assert.match(html, /data-selection-metric="accuracy"/);
+assert.equal(selectionAudit.pool.example_count, 385);
+assert.equal(selectionAudit.model_fits, 506);
+assert.equal(
+  Buffer.from(await webcrypto.subtle.digest("SHA-256", selectionAuditBytes)).toString("hex"),
+  EXPECTED_SELECTION_AUDIT_SHA256,
+  "The browser trust root must pin the selection-audit report bytes",
+);
+assert.match(selectionAuditEngine, /complete OOF ledger/u);
 assert.match(html, /class="lab-shell" aria-busy="true"/);
 assert.match(html, /role="status" aria-live="polite" data-model-status/);
 assert.match(html, /data-model-gated disabled/);
@@ -200,6 +221,7 @@ for (const file of [
   "engine.mjs",
   "ml-engine.mjs",
   "open-set-engine.mjs",
+  "selection-audit.mjs",
   "styles.css",
   "assets/eliza-lab-mark.svg",
   "assets/eliza-lab-lockup.svg",
@@ -240,6 +262,11 @@ if (stageIndex >= 0) {
       `The deployed v3 ${file} must be byte-identical to the checked-in bundle`,
     );
   }
+  assert.deepEqual(
+    await readFile(path.join(stage, "data/selection-stability-v1.json")),
+    selectionAuditBytes,
+    "The deployed selection audit must be byte-identical to the checked-in report",
+  );
 }
 
 console.log("ELIZA Lab site and v3 bundle validation passed.");

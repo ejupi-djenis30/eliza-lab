@@ -21,6 +21,7 @@ test("all primary destinations remain visible in the CSS-only mobile navigation"
     ["#experiment", "Inference"],
     ["#method", "Pipeline"],
     ["#open-set-v3", "Model report"],
+    ["#selection-stability", "Stability"],
     ["#safety", "Boundaries"],
   ]) {
     assert.ok(html.includes(`<a href="${href}">${label}</a>`));
@@ -28,11 +29,11 @@ test("all primary destinations remain visible in the CSS-only mobile navigation"
 
   assert.match(
     styles,
-    /@media \(max-width: 960px\)[\s\S]*?\.site-header nav\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/,
+    /@media \(max-width: 960px\)[\s\S]*?\.site-header nav\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/,
   );
   assert.match(
     styles,
-    /@media \(max-width: 620px\)[\s\S]*?\.site-header nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
+    /@media \(max-width: 620px\)[\s\S]*?\.site-header nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/,
   );
   assert.doesNotMatch(
     styles,

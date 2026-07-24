@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="ELIZA Lab showing a local intent prediction and its inspectable feature trace." />
     <link rel="canonical" href="https://ejupi-djenis30.github.io/PsychologistRustBot/" />
     <link rel="icon" href="assets/eliza-lab-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=1.4.0" />
+    <link rel="stylesheet" href="styles.css?v=1.5.0" />
     <title>ELIZA Lab — Train it. Inspect it.</title>
   </head>
   <body id="top">
@@ -46,6 +46,7 @@
         <a href="#experiment">Inference</a>
         <a href="#method">Pipeline</a>
         <a href="#open-set-v3">Model report</a>
+        <a href="#selection-stability">Stability</a>
         <a href="#safety">Boundaries</a>
       </nav>
       <a class="source-link" href="https://github.com/ejupi-djenis30/PsychologistRustBot">
@@ -266,9 +267,57 @@
         </div>
       </section>
 
+      <section class="selection-audit section" id="selection-stability" aria-labelledby="selection-stability-title">
+        <div class="section-heading compact">
+          <p class="eyebrow"><span>05</span> Pre-test selection stability</p>
+          <h2 id="selection-stability-title">The less flattering result<br />belongs here too.</h2>
+          <p>
+            Eleven outer folds hold out one whole family per class. Five inner folds then compare
+            all nine candidates without access to calibration, ID-test, OOD or contrast data.
+            Every selection-pool row gets one genuinely out-of-family prediction.
+          </p>
+          <p class="report-kicker" role="status" aria-live="polite" data-selection-status>AUDIT LOADING</p>
+        </div>
+
+        <div class="selection-audit-grid">
+          <dl class="selection-audit-metrics">
+            <div>
+              <dt>Out-of-fold accuracy</dt>
+              <dd><span data-selection-metric="accuracy">—</span><small>385 rows · before abstention</small></dd>
+            </div>
+            <div>
+              <dt>Out-of-fold macro F1</dt>
+              <dd><span data-selection-metric="macro-f1">—</span><small>seven balanced labels</small></dd>
+            </div>
+            <div>
+              <dt>Accuracy interval</dt>
+              <dd><span data-selection-metric="interval">—</span><small>1,000 family-cluster resamples</small></dd>
+            </div>
+            <div>
+              <dt>Most stable choice</dt>
+              <dd><span data-selection-metric="candidate">—</span><small>outer folds selecting the same candidate</small></dd>
+            </div>
+          </dl>
+          <aside class="selection-audit-boundary">
+            <p class="report-kicker">WHY THIS NUMBER IS LOWER</p>
+            <h3>Selection has to survive families it has never seen.</h3>
+            <p>
+              The final bundle reports frozen held-out evaluations. This audit asks a different
+              question: whether the grid choice stays useful when complete paraphrase families move
+              out of training. It often moves. That uncertainty is evidence, not a result to hide.
+            </p>
+            <p>
+              The browser verifies the report digest, rebuilds its confusion matrix, probability
+              losses, per-fold metrics and selection counts, then renders these values.
+            </p>
+            <a href="data/selection-stability-v1.json">Inspect the complete OOF ledger <span aria-hidden="true">↗</span></a>
+          </aside>
+        </div>
+      </section>
+
       <section class="robustness section" id="robustness" aria-labelledby="robustness-title">
         <div class="section-heading compact">
-          <p class="eyebrow"><span>05</span> Post-training robustness</p>
+          <p class="eyebrow"><span>06</span> Post-training robustness</p>
           <h2 id="robustness-title">Stable under format.<br />Measured under noise.</h2>
           <p>
             A fixed metamorphic suite now probes the verified model after every training and
@@ -325,7 +374,7 @@
 
       <section class="safety section" id="safety" aria-labelledby="safety-title">
         <div>
-          <p class="eyebrow"><span>06</span> A hard boundary</p>
+          <p class="eyebrow"><span>07</span> A hard boundary</p>
           <h2 id="safety-title">A classifier is not a clinician.</h2>
         </div>
         <div class="safety-copy">
@@ -344,7 +393,7 @@
       </section>
 
       <section class="provenance section" aria-labelledby="provenance-title">
-        <p class="eyebrow"><span>07</span> Refactored with intent</p>
+        <p class="eyebrow"><span>08</span> Refactored with intent</p>
         <h2 id="provenance-title">The useful question survived.<br />The unsafe product did not.</h2>
         <p>
           The original 2023 Telegram prototype stored conversations and implied therapeutic use.
