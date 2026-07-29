@@ -9,7 +9,7 @@ body:
       value: |
         ELIZA Lab is an educational rule-engine demo, not a care product. Use fictional examples
         and keep real conversations out of the issue. Send vulnerabilities through the
-        [security policy](https://github.com/ejupi-djenis30/PsychologistRustBot/security/policy).
+        [security policy](https://github.com/ejupi-djenis30/eliza-lab/security/policy).
   - type: textarea
     id: problem
     attributes:

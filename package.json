@@ -7,8 +7,12 @@
     "node": ">=22"
   },
   "scripts": {
+    "audit": "npm audit --audit-level=moderate",
+    "build:site": "node scripts/stage-site.mjs",
+    "validate:site": "node site/scripts/validate-site.mjs --stage pages-dist",
     "test:site": "node --test site/tests/*.test.mjs",
-    "test:responsive": "node site/tests/responsive-layout.e2e.mjs"
+    "test:responsive": "node site/tests/responsive-layout.e2e.mjs",
+    "check": "npm run audit && npm run test:site && npm run test:responsive && npm run build:site && npm run validate:site"
   },
   "devDependencies": {
     "playwright": "1.61.1"

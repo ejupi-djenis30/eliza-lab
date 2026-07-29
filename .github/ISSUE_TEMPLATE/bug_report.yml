@@ -9,7 +9,7 @@ body:
       value: |
         Use a short invented prompt. Do not attach real conversations, health details, names,
         contact information, or other personal data. Report vulnerabilities through the
-        [security policy](https://github.com/ejupi-djenis30/PsychologistRustBot/security/policy).
+        [security policy](https://github.com/ejupi-djenis30/eliza-lab/security/policy).
   - type: dropdown
     id: area
     attributes:

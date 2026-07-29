@@ -614,7 +614,7 @@ export function generateSpdx(metadata, {
     dataLicense: "CC0-1.0",
     SPDXID: "SPDXRef-DOCUMENT",
     name: `${packageName}-${contract.version}`,
-    documentNamespace: `https://github.com/ejupi-djenis30/PsychologistRustBot/releases/download/${contract.expectedTag}/${packageName}-${contract.version}-spdx-${lockDigest.slice(0, 16)}`,
+    documentNamespace: `https://github.com/ejupi-djenis30/eliza-lab/releases/download/${contract.expectedTag}/${packageName}-${contract.version}-spdx-${lockDigest.slice(0, 16)}`,
     creationInfo: {
       created: spdxCreationTime(),
       creators: ["Tool: ELIZA-Lab-release-contract"],

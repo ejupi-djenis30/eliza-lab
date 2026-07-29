@@ -4,7 +4,7 @@
 
 # ELIZA Lab
 
-[![CI](https://github.com/ejupi-djenis30/PsychologistRustBot/actions/workflows/ci.yml/badge.svg)](https://github.com/ejupi-djenis30/PsychologistRustBot/actions/workflows/ci.yml)
+[![CI](https://github.com/ejupi-djenis30/eliza-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/ejupi-djenis30/eliza-lab/actions/workflows/ci.yml)
 
 > Train a real intent classifier locally, reproduce its evaluation, and inspect every decision.
 
@@ -13,7 +13,7 @@ implementation stored sensitive conversations in an insecure database. The proje
 rebuilt as **ELIZA Lab**: an educational Rust machine-learning pipeline and browser lab with no
 accounts, prompt submission, transcript storage, diagnosis, or therapeutic claims.
 
-[Open the interactive demo](https://ejupi-djenis30.github.io/PsychologistRustBot/) ·
+[Open the interactive lab](https://ejupi-djenis30.github.io/eliza-lab/) ·
 [Model card](docs/MODEL_CARD.md) · [Dataset contract](docs/DATASET.md) ·
 [Architecture](docs/ARCHITECTURE.md) · [Release recovery](docs/RELEASE_RECOVERY.md) ·
 [Safety model](SECURITY.md)
@@ -140,10 +140,14 @@ The verifier reconstructs every family aggregate and binds each dashboard value 
 the checked bundle manifest and policy, and the frozen ID-test ledger. CI, Pages and release
 quality run the same check before deployment or publication.
 
+The verified browser build is published with the project at
+[`ejupi-djenis30.github.io/eliza-lab`](https://ejupi-djenis30.github.io/eliza-lab/). Its deployment
+is built from the same reviewed runtime files and evidence bundle checked by CI.
+
 ## Install a verified build
 
 Download the archive for your system from the
-[latest release](https://github.com/ejupi-djenis30/PsychologistRustBot/releases/latest):
+[latest release](https://github.com/ejupi-djenis30/eliza-lab/releases/latest):
 
 | Platform | Release asset |
 | --- | --- |
@@ -155,7 +159,7 @@ Download the archive for your system from the
 Compare it with the matching `.sha256` file or `SHA256SUMS`, then verify its GitHub attestation:
 
 ```bash
-gh attestation verify <downloaded-archive> --repo ejupi-djenis30/PsychologistRustBot
+gh attestation verify <downloaded-archive> --repo ejupi-djenis30/eliza-lab
 ```
 
 Extract the archive and run the included `eliza-lab` executable. Open-set bundle model `3.0.0`, the
@@ -286,7 +290,7 @@ Verify downloaded files with:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-gh attestation verify <downloaded-file> -R ejupi-djenis30/PsychologistRustBot
+gh attestation verify <downloaded-file> -R ejupi-djenis30/eliza-lab
 ```
 
 To test a proposed tag without creating one, start the **Release** workflow manually and provide
