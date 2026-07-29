@@ -1,0 +1,5 @@
+Contact: https://github.com/ejupi-djenis30/eliza-lab/security/advisories/new
+Expires: 2027-07-28T23:59:59Z
+Preferred-Languages: en
+Canonical: https://ejupi-djenis30.github.io/eliza-lab/.well-known/security.txt
+Policy: https://github.com/ejupi-djenis30/eliza-lab/security/policy

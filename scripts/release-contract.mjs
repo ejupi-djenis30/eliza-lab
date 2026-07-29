@@ -647,6 +647,31 @@ export function smokeBinary(
   invariant(existsSync(resolvedBundle), `Cannot verify missing V3 bundle: ${resolvedBundle}`);
   invariant(existsSync(resolvedLegacyModel), `Cannot smoke-test missing legacy model: ${resolvedLegacyModel}`);
 
+  const selfTest = runBinary(
+    resolvedBinary,
+    ["doctor", "--json"],
+    "Embedded workbench self-test",
+    120_000,
+  );
+  let diagnostic;
+  try {
+    diagnostic = JSON.parse(selfTest.stdout);
+  } catch (error) {
+    throw new Error(`Embedded workbench self-test did not return JSON: ${error.message}`);
+  }
+  invariant(
+    diagnostic?.report_kind === "eliza-embedded-self-test" &&
+      diagnostic.status === "pass" &&
+      diagnostic.bundle?.model_version === "3.0.0",
+    "Embedded workbench self-test did not verify the expected V3 bundle",
+  );
+  invariant(
+    Array.isArray(diagnostic.checks) &&
+      diagnostic.checks.length === 7 &&
+      diagnostic.checks.every((check) => check?.status === "pass"),
+    "Embedded workbench self-test omitted a required passing check",
+  );
+
   const embeddedInference = runBinary(
     resolvedBinary,
     ["infer", "--json", "Hello, I want to make a concrete plan"],
@@ -1229,7 +1254,9 @@ function runCli() {
       requireOption(options, "bundle"),
       requireOption(options, "legacy-model"),
     );
-    console.log("Built CLI V3 verification, reproduction, inference, and explicit V1 compatibility checks passed.");
+    console.log(
+      "Built CLI embedded diagnostics, V3 verification, reproduction, inference, and explicit V1 compatibility checks passed.",
+    );
     return;
   }
 
@@ -1241,7 +1268,9 @@ function runCli() {
       requireOption(options, "bundle"),
       requireOption(options, "legacy-model"),
     );
-    console.log("Packaged CLI V3 verification, reproduction, inference, and explicit V1 compatibility checks passed.");
+    console.log(
+      "Packaged CLI embedded diagnostics, V3 verification, reproduction, inference, and explicit V1 compatibility checks passed.",
+    );
     return;
   }
 

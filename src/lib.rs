@@ -3,6 +3,7 @@
 //! The deterministic rule engine remains available on its own. A trained model can be added for
 //! intent routing, but input limits and the non-clinical safety exit always run before inference.
 
+pub mod diagnostics;
 pub mod ml;
 pub mod open_set;
 pub mod robustness;

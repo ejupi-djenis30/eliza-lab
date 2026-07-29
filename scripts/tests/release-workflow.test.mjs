@@ -542,4 +542,5 @@ test("CI and Pages pin runners and toolchains instead of floating production inp
   assert.match(continuousIntegration, /node scripts\/release-contract\.mjs audit-policy/u);
   assert.match(continuousIntegration, /cron: "15 6 \* \* 1"/u);
   assert.match(pages, /node-version: 22\.23\.1/u);
+  assert.match(pages, /include-hidden-files: true/u);
 });

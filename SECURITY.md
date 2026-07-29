@@ -40,5 +40,7 @@ personal information even though the application is local-only.
 
 ## Reporting
 
-Use GitHub private vulnerability reporting when it is available, or email `info@ejupilabs.com`.
+Use [GitHub private vulnerability reporting](https://github.com/ejupi-djenis30/eliza-lab/security/advisories/new),
+or email `info@ejupilabs.com`. The deployed Page publishes the same primary contact at
+[`/.well-known/security.txt`](https://ejupi-djenis30.github.io/eliza-lab/.well-known/security.txt).
 Do not include real conversation transcripts, credentials, or personal data in a public issue.

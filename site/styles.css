@@ -830,6 +830,59 @@ h1 em {
   margin: 0;
 }
 
+.workbench-callout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(24rem, 1.2fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  margin-top: 2rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(231, 222, 204, 0.45);
+}
+
+.workbench-callout h3 {
+  max-width: 15ch;
+  margin: 0.55rem 0 1rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.9rem, 3.5vw, 3.25rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.workbench-callout > div > p:not(.report-kicker) {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--muted);
+}
+
+.workbench-callout a {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35em;
+}
+
+.workbench-callout pre {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  overflow-x: auto;
+  border: 1px solid rgba(242, 236, 223, 0.13);
+  border-radius: 1rem;
+  color: var(--paper);
+  background: var(--ink);
+  box-shadow: var(--shadow);
+  font-size: clamp(0.68rem, 1.25vw, 0.82rem);
+  line-height: 1.9;
+  white-space: pre;
+}
+
 .section-heading.compact {
   grid-template-columns: 1fr;
 }
@@ -1504,6 +1557,10 @@ footer > a {
     grid-template-columns: 1fr;
   }
 
+  .workbench-callout {
+    grid-template-columns: 1fr;
+  }
+
   .conversation-panel {
     border-right: 0;
     border-bottom: 1px solid rgba(242, 236, 223, 0.14);
@@ -1679,6 +1736,15 @@ footer > a {
   .transcript,
   .inspector {
     padding: 1.1rem;
+  }
+
+  .workbench-callout {
+    padding: 1.1rem;
+  }
+
+  .workbench-callout pre {
+    padding: 1rem;
+    font-size: 0.66rem;
   }
 
   .message {
