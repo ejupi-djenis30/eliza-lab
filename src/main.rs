@@ -1,3 +1,4 @@
+use eliza_lab::diagnostics::run_embedded_self_test;
 use eliza_lab::ml::{
     write_training_artifacts, Dataset, EvaluationMetrics, IntentModel, MlError, OodDataset,
     OodMetrics, TrainingConfig,
@@ -97,6 +98,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         Some("robustness") => robustness_command(&arguments[1..]),
         Some("chat") => chat_command(&arguments[1..]),
         Some("dataset") => dataset_command(&arguments[1..]),
+        Some("doctor") => doctor_command(&arguments[1..]),
         Some("--once") => legacy_once(&arguments[1..]),
         Some("--help" | "-h" | "help") => {
             print_help();
@@ -108,6 +110,49 @@ fn run() -> Result<(), Box<dyn Error>> {
         .into()),
         None => interactive(None),
     }
+}
+
+fn doctor_command(arguments: &[String]) -> Result<(), Box<dyn Error>> {
+    let mut json = false;
+    for argument in arguments {
+        match argument.as_str() {
+            "--json" => json = true,
+            "--help" | "-h" => {
+                println!(
+                    "Usage: eliza-lab doctor [--json]\n\
+                     Verifies the embedded SHA-256 inventory, semantic artifact contract,\n\
+                     compiled runtime, probability simplex, contrastive explanation,\n\
+                     abstention path, and pre-inference input and safety boundaries.\n\
+                     The self-test reads no prompt, file, environment variable, or stdin."
+                );
+                return Ok(());
+            }
+            option => return Err(CliError(format!("unknown doctor option `{option}`")).into()),
+        }
+    }
+
+    let report = run_embedded_self_test()?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(());
+    }
+
+    println!(
+        "ELIZA Lab {} embedded self-test: PASS",
+        report.application_version
+    );
+    println!("model        {}", report.bundle.model_version);
+    println!("dataset      {}", report.bundle.dataset_sha256);
+    println!("split plan   {}", report.bundle.split_plan_sha256);
+    println!(
+        "checks       {} / {} passed",
+        report.checks.len(),
+        report.checks.len()
+    );
+    for check in report.checks {
+        println!("PASS         {}", check.name);
+    }
+    Ok(())
 }
 
 fn selection_command(arguments: &[String]) -> Result<(), Box<dyn Error>> {
@@ -1090,6 +1135,7 @@ fn print_help() {
            eliza-lab infer-batch [--bundle PATH] < input.jsonl\n\
            eliza-lab bundle <verify|reproduce> [options]\n\
            eliza-lab robustness audit [options] [< input.jsonl]\n\
+           eliza-lab doctor [--json]\n\
            eliza-lab chat [--bundle PATH]\n\
            eliza-lab dataset check [--dataset PATH]\n\
            eliza-lab --once <prompt>       Legacy rule-only response\n\n\

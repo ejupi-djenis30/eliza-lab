@@ -14,6 +14,15 @@ test("the hero links to the latest immutable release", async () => {
   );
 });
 
+test("the public path exposes the prompt-free local workbench self-test", async () => {
+  const html = await read("index.html");
+
+  assert.match(html, /id="local-workbench"/);
+  assert.match(html, /cargo run --release --locked -- doctor --json/);
+  assert.match(html, /creates no new evaluation result/);
+  assert.match(html, /Inspect the implementation/);
+});
+
 test("all primary destinations remain visible in the CSS-only mobile navigation", async () => {
   const [html, styles] = await Promise.all([read("index.html"), read("styles.css")]);
 

@@ -16,17 +16,20 @@ through the explicit `--legacy-v1` compatibility flag.
    transformations, aggregate stability metrics and optional release gates. Caller-provided cases
    use a compiled model; the frozen ID-test path accepts and consumes only a `VerifiedBundle`.
    Neither path can mutate or select a model.
-4. `src/lib.rs` owns bounded dialogue behaviour. Empty or oversized input and explicit safety-stop
+4. `src/diagnostics.rs` owns the prompt-free embedded self-test. It verifies the bundle, compiles
+   the runtime and checks inference invariants without accepting data or producing evaluation
+   metrics.
+5. `src/lib.rs` owns bounded dialogue behaviour. Empty or oversized input and explicit safety-stop
    phrases are handled before learned inference.
-5. `src/main.rs` exposes v3 training, selection stability, verification, reproduction, batch
-   inference, aggregate robustness auditing and interactive commands. Legacy inference must be
-   requested explicitly.
-6. `site/open-set-engine.mjs` verifies the same five-file bundle, reproduces its prediction
+6. `src/main.rs` exposes v3 training, selection stability, verification, reproduction, batch
+   inference, aggregate robustness auditing, embedded diagnostics and interactive commands.
+   Legacy inference must be requested explicitly.
+7. `site/open-set-engine.mjs` verifies the same five-file bundle, reproduces its prediction
    ledgers and runs inference in the browser. A missing trust root, digest mismatch or semantic
    mismatch disables the interface.
-7. `site/selection-audit.mjs` pins the canonical audit digest and reconstructs the complete OOF
+8. `site/selection-audit.mjs` pins the canonical audit digest and reconstructs the complete OOF
    confusion matrix, probability losses, fold metrics, candidate ranks and selection counts.
-8. `site/app.js` renders only successfully verified evidence. Prompts stay in the tab.
+9. `site/app.js` renders only successfully verified evidence. Prompts stay in the tab.
 
 ## Experiment flow
 
@@ -155,6 +158,12 @@ split-plan.json
 Rust verification checks strict schemas, bounded sizes, provenance, model/policy consistency,
 prediction ledgers, contrast-pair summaries, baseline reconstruction and SHA-256 digests. `bundle reproduce`
 reruns the deterministic experiment and compares all four payload digests.
+
+`doctor` applies the same embedded verification before compiling the runtime. It then checks a
+finite probability simplex, exact contrastive top-two reconstruction, featureless-input
+abstention, the input limit and the pre-inference safety exit. Its fixed fictional probes never
+become metrics and cannot reach fitting, calibration or policy selection. JSON output contains
+only build and bundle provenance plus named pass states; it omits the probe text.
 
 The browser carries the expected manifest digest as its release trust root. It verifies all payload
 digests, source-row fingerprints, prediction ledgers, calibration summaries, threshold

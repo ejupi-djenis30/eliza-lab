@@ -174,6 +174,19 @@ The application version (`1.5.0`) and bundled model versions are intentionally i
 
 ## Run it
 
+Verify a build from the current source tree before giving it any input:
+
+```bash
+cargo run --release --locked -- doctor --json
+```
+
+The self-test reads no prompt, file, environment variable or standard input. It verifies the
+embedded bundle's SHA-256 inventory and semantic contract, compiles the runtime, checks the
+probability simplex and contrastive explanation, then proves that featureless input, oversized
+input and the narrow safety-stop path do not expose a learned decision. This is an operational
+check, not another evaluation set, and none of its fixed probes enter training or policy
+selection.
+
 Inspect one learned prediction:
 
 ```bash
@@ -314,6 +327,7 @@ node scripts/release-contract.mjs verify --tag v1.5.0
 src/open_set.rs             v3 data contracts, typed splits, training, evaluation, bundles, inference
 src/open_set/selection_audit.rs typed pre-test pool, nested group CV, OOF ledger and intervals
 src/robustness.rs           bounded aggregate-only metamorphic robustness audit and release gates
+src/diagnostics.rs          prompt-free embedded bundle and inference self-test
 src/ml.rs                   explicit legacy-v1 compatibility implementation
 src/lib.rs                  hard boundaries and dialogue routing
 src/main.rs                 train / selection audit / evaluate / infer / chat CLI

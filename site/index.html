@@ -165,6 +165,24 @@
             </aside>
           </div>
         </div>
+
+        <aside class="workbench-callout" id="local-workbench" aria-labelledby="local-workbench-title">
+          <div>
+            <p class="report-kicker">CURRENT SOURCE / LOCAL SELF-TEST</p>
+            <h3 id="local-workbench-title">Verify the workbench before you try it.</h3>
+            <p>
+              The prompt-free self-test checks the embedded SHA-256 inventory, semantic model
+              contract, compiled inference, probability simplex, contrastive explanation,
+              abstention and pre-inference boundaries. It creates no new evaluation result.
+            </p>
+            <a href="https://github.com/ejupi-djenis30/eliza-lab">
+              Inspect the implementation <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+          <pre aria-label="Commands to build and verify ELIZA Lab from source"><code>git clone https://github.com/ejupi-djenis30/eliza-lab.git
+cd eliza-lab
+cargo run --release --locked -- doctor --json</code></pre>
+        </aside>
       </section>
 
       <section class="method section" id="method" aria-labelledby="method-title">

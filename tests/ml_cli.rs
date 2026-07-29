@@ -202,6 +202,52 @@ fn primary_inference_json_uses_v3_and_keeps_evidence_and_hard_safety_boundary() 
 }
 
 #[test]
+fn doctor_verifies_the_embedded_workbench_without_repository_files() {
+    let directory = TestDirectory::new();
+    let output = Command::new(binary())
+        .current_dir(directory.path())
+        .args(["doctor", "--json"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["schema_version"], 1);
+    assert_eq!(report["report_kind"], "eliza-embedded-self-test");
+    assert_eq!(report["status"], "pass");
+    assert_eq!(report["bundle"]["model_version"], "3.0.0");
+    assert_eq!(
+        report["bundle"]["payload_sha256"]
+            .as_object()
+            .unwrap()
+            .len(),
+        4
+    );
+    let checks = report["checks"].as_array().unwrap();
+    assert_eq!(checks.len(), 7);
+    assert!(checks.iter().all(|check| check["status"] == "pass"));
+
+    let serialized = String::from_utf8(output.stdout).unwrap();
+    assert!(!serialized.contains("Today I feel calm"));
+    assert!(!serialized.contains("I want to die"));
+
+    let human = Command::new(binary()).arg("doctor").output().unwrap();
+    assert!(human.status.success());
+    assert!(String::from_utf8_lossy(&human.stdout).contains("embedded self-test: PASS"));
+
+    let invalid = Command::new(binary())
+        .args(["doctor", "--bundle", "untrusted"])
+        .output()
+        .unwrap();
+    assert!(!invalid.status.success());
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("unknown doctor option `--bundle`"));
+}
+
+#[test]
 fn legacy_inference_requires_an_explicit_mode_and_rejects_conflicting_sources() {
     let model = project_path("models/eliza-intent-v1.json");
     let bundle = project_path("artifacts/eliza-open-set-v3");

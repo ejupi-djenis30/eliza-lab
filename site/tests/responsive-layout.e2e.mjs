@@ -26,6 +26,7 @@ const measuredSelectors = [
   ".source-link",
   ".hero",
   ".lab-shell",
+  ".workbench-callout",
   ".method-grid",
   ".pipeline-map",
   ".v3-protocol",

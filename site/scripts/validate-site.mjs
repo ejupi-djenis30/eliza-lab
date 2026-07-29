@@ -23,6 +23,7 @@ const styles = await readFile(path.join(siteRoot, "styles.css"), "utf8");
 const notFound = await readFile(path.join(siteRoot, "404.html"), "utf8");
 const robots = await readFile(path.join(siteRoot, "robots.txt"), "utf8");
 const sitemap = await readFile(path.join(siteRoot, "sitemap.xml"), "utf8");
+const security = await readFile(path.join(siteRoot, ".well-known", "security.txt"), "utf8");
 const socialPreviewSource = await readFile(
   path.join(siteRoot, "assets/social-preview-source.svg"),
   "utf8",
@@ -145,6 +146,26 @@ assert.match(notFound, /<meta name="robots" content="noindex(?:,\s*nofollow)?"/)
 assert.ok(notFound.includes(`href="${canonicalUrl}"`), "The 404 page must return to the canonical lab");
 assert.ok(robots.includes(`Sitemap: ${canonicalUrl}sitemap.xml`));
 assert.ok(sitemap.includes(`<loc>${canonicalUrl}</loc>`));
+assert.ok(
+  security.includes(
+    "Contact: https://github.com/ejupi-djenis30/eliza-lab/security/advisories/new",
+  ),
+  "security.txt must direct reports to GitHub private vulnerability reporting",
+);
+assert.ok(
+  security.includes(`Canonical: ${canonicalUrl}.well-known/security.txt`),
+  "security.txt must identify its deployed project-Page URL",
+);
+assert.ok(
+  security.includes("Policy: https://github.com/ejupi-djenis30/eliza-lab/security/policy"),
+  "security.txt must link the repository security policy",
+);
+assert.match(security, /^Expires: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/mu);
+const securityExpiry = Date.parse(security.match(/^Expires: (.+)$/mu)?.[1] ?? "");
+assert.ok(
+  Number.isFinite(securityExpiry) && securityExpiry > Date.now() + 30 * 24 * 60 * 60 * 1_000,
+  "security.txt must retain at least 30 days before expiry",
+);
 
 assert.equal(v3Manifest.schema_version, 3);
 assert.equal(v3Manifest.bundle_kind, "eliza-open-set-bundle");
@@ -277,6 +298,7 @@ if (stageIndex >= 0) {
     "The deployed selection audit must be byte-identical to the checked-in report",
   );
   for (const file of [
+    ".nojekyll",
     "404.html",
     "app.js",
     "engine.mjs",
@@ -293,6 +315,11 @@ if (stageIndex >= 0) {
       `The staged ${file} must be byte-identical to its reviewed source`,
     );
   }
+  assert.deepEqual(
+    await readFile(path.join(stage, ".well-known", "security.txt")),
+    await readFile(path.join(siteRoot, ".well-known", "security.txt")),
+    "The staged security.txt must be byte-identical to its reviewed source",
+  );
 }
 
 console.log("ELIZA Lab site and v3 bundle validation passed.");

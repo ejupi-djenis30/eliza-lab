@@ -14,6 +14,7 @@ if (
 }
 
 const runtimeFiles = [
+  ".nojekyll",
   "404.html",
   "app.js",
   "engine.mjs",
@@ -27,9 +28,14 @@ const runtimeFiles = [
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(path.join(outputRoot, "data"), { recursive: true });
+await mkdir(path.join(outputRoot, ".well-known"), { recursive: true });
 
 await Promise.all(
   runtimeFiles.map((file) => copyFile(path.join(siteRoot, file), path.join(outputRoot, file))),
+);
+await copyFile(
+  path.join(siteRoot, ".well-known", "security.txt"),
+  path.join(outputRoot, ".well-known", "security.txt"),
 );
 await cp(path.join(siteRoot, "assets"), path.join(outputRoot, "assets"), { recursive: true });
 await cp(
@@ -42,4 +48,6 @@ await copyFile(
   path.join(outputRoot, "data", "selection-stability-v1.json"),
 );
 
-console.log(`Staged ${runtimeFiles.length} reviewed runtime files and the verified v3 evidence.`);
+console.log(
+  `Staged ${runtimeFiles.length} reviewed root files, the security contact and verified v3 evidence.`,
+);
