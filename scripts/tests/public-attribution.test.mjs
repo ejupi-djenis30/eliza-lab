@@ -25,6 +25,11 @@ test("public project surfaces use collective attribution", async () => {
     "The license must identify the collective copyright holders.",
   );
   assert.match(readme, /Ejupi Labs and the project contributors rebuilt it/u);
+  assert.match(
+    readme,
+    /v1\.5\.0[\s\S]*--repo ejupi-djenis30\/PsychologistRustBot[\s\S]*after the rename[\s\S]*--repo ejupi-djenis30\/eliza-lab/u,
+    "The README must distinguish immutable pre-rename provenance from future releases.",
+  );
   assert.match(site, />ELIZA Lab contributors ↗<\/a>/u);
   assert.doesNotMatch(
     site,
