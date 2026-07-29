@@ -303,6 +303,61 @@ h1 em {
   border-color: var(--rust);
 }
 
+.not-found {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: clamp(1.25rem, 5vw, 4rem);
+}
+
+.not-found__panel {
+  position: relative;
+  width: min(42rem, 100%);
+  padding: clamp(2rem, 7vw, 5rem);
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: rgba(242, 236, 223, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.not-found__panel::after {
+  position: absolute;
+  top: -7rem;
+  right: -7rem;
+  width: 15rem;
+  height: 15rem;
+  border: 1px solid rgba(178, 71, 53, 0.36);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2.7rem rgba(178, 71, 53, 0.06),
+    0 0 0 5.4rem rgba(178, 71, 53, 0.035);
+  content: "";
+  pointer-events: none;
+}
+
+.not-found__panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.not-found__panel > img {
+  display: block;
+  margin-bottom: clamp(3rem, 8vw, 6rem);
+}
+
+.not-found__panel h1 {
+  max-width: 9ch;
+  font-size: clamp(3.1rem, 9vw, 6rem);
+}
+
+.not-found__panel > p:not(.eyebrow) {
+  max-width: 34rem;
+  margin: 1.6rem 0 2rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.18rem);
+}
+
 .hero-facts {
   display: flex;
   flex-wrap: wrap;

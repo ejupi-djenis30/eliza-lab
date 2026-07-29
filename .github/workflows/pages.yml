@@ -15,6 +15,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "scripts/verify-robustness-report.mjs"
+      - "scripts/stage-site.mjs"
       - ".github/workflows/pages.yml"
   push:
     branches: [master]
@@ -30,6 +31,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "scripts/verify-robustness-report.mjs"
+      - "scripts/stage-site.mjs"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -79,15 +81,9 @@ jobs:
             > target/pages-robustness-id-test-report.json
           node scripts/verify-robustness-report.mjs \
             target/pages-robustness-id-test-report.json
-      - name: Stage the site with the verified v3 bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p pages-dist/data
-          cp -R site/. pages-dist/
-          cp -R artifacts/eliza-open-set-v3 pages-dist/data/open-set-v3
-          cp reports/selection-stability-v1.json pages-dist/data/selection-stability-v1.json
-      - run: node site/scripts/validate-site.mjs --stage pages-dist
+      - name: Stage the reviewed runtime with the verified v3 bundle
+        run: npm run build:site
+      - run: npm run validate:site
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: pages-dist

@@ -22,7 +22,7 @@ risk.
 
 Report a conduct concern privately to [info@ejupilabs.com](mailto:info@ejupilabs.com). For a
 software vulnerability or exposed credential, use
-[GitHub private vulnerability reporting](https://github.com/ejupi-djenis30/PsychologistRustBot/security/advisories/new)
+[GitHub private vulnerability reporting](https://github.com/ejupi-djenis30/eliza-lab/security/advisories/new)
 instead. Reports will be handled confidentially and retaliation for a good-faith report is not
 acceptable.
 

@@ -72,6 +72,4 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: ./node_modules/.bin/playwright install --with-deps chromium
       - run: node scripts/release-contract.mjs audit-policy
-      - run: node --test site/tests/*.test.mjs
-      - run: npm run test:responsive
-      - run: node site/scripts/validate-site.mjs
+      - run: npm run check

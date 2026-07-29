@@ -82,8 +82,6 @@ test("CI, Pages and release reproduce the complete audit before use", () => {
     assert.ok(comparison > audit, `${name} must compare the regenerated report bytes`);
   }
   const pages = workflows.find(([name]) => name === "pages.yml")[1];
-  assert.match(
-    pages,
-    /cp reports\/selection-stability-v1\.json pages-dist\/data\/selection-stability-v1\.json/u,
-  );
+  assert.match(pages, /npm run build:site/u);
+  assert.match(pages, /npm run validate:site/u);
 });

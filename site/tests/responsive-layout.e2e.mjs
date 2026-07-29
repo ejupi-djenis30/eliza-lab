@@ -11,7 +11,7 @@ const repositoryRoot = resolve(fileURLToPath(new URL("../../", import.meta.url))
 const siteRoot = resolve(repositoryRoot, "site");
 const artifactRoot = resolve(repositoryRoot, "artifacts/eliza-open-set-v3");
 const selectionReport = resolve(repositoryRoot, "reports/selection-stability-v1.json");
-const mountPath = "/PsychologistRustBot";
+const mountPath = "/eliza-lab";
 const widths = [320, 375, 620, 621, 960, 961, 1440];
 const navigationTargets = [
   "#experiment",

@@ -20,6 +20,9 @@ const app = await readFile(path.join(siteRoot, "app.js"), "utf8");
 const openSetEngine = await readFile(path.join(siteRoot, "open-set-engine.mjs"), "utf8");
 const selectionAuditEngine = await readFile(path.join(siteRoot, "selection-audit.mjs"), "utf8");
 const styles = await readFile(path.join(siteRoot, "styles.css"), "utf8");
+const notFound = await readFile(path.join(siteRoot, "404.html"), "utf8");
+const robots = await readFile(path.join(siteRoot, "robots.txt"), "utf8");
+const sitemap = await readFile(path.join(siteRoot, "sitemap.xml"), "utf8");
 const socialPreviewSource = await readFile(
   path.join(siteRoot, "assets/social-preview-source.svg"),
   "utf8",
@@ -50,12 +53,14 @@ const verifiedBrowserBundle = await loadOpenSetBundle("https://static.invalid/op
   },
 });
 const expectedCsp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'none'; connect-src 'self'; worker-src 'none'; manifest-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
-const socialPreviewUrl = "https://ejupi-djenis30.github.io/PsychologistRustBot/assets/social-preview.png";
+const canonicalUrl = "https://ejupi-djenis30.github.io/eliza-lab/";
+const socialPreviewUrl = `${canonicalUrl}assets/social-preview.png`;
 
 assert.match(html, /<html lang="en">/);
 assert.match(html, /<title>[^<]+<\/title>/);
 assert.match(html, /name="description"/);
-assert.match(html, /rel="canonical"/);
+assert.ok(html.includes(`<link rel="canonical" href="${canonicalUrl}" />`));
+assert.ok(html.includes(`property="og:url" content="${canonicalUrl}"`));
 assert.match(html, /<meta name="referrer" content="no-referrer" \/>/);
 assert.match(html, /http-equiv="Content-Security-Policy"/);
 assert.ok(html.includes(`content="${expectedCsp}"`), "The CSP must allow only the static model fetch");
@@ -75,7 +80,7 @@ assert.doesNotMatch(app, /\.\/ml-engine\.mjs/);
 assert.doesNotMatch(html, /(?:src|href)="\//, "Assets must remain relative for project Pages");
 assert.ok(
   html.includes(
-    '<a href="https://github.com/ejupi-djenis30/PsychologistRustBot">ELIZA Lab contributors ↗</a>',
+    '<a href="https://github.com/ejupi-djenis30/eliza-lab">ELIZA Lab contributors ↗</a>',
   ),
   "The footer must use collective project attribution.",
 );
@@ -136,6 +141,10 @@ assert.match(styles, /\.pipeline-map\s*\{/, "The pipeline diagram must be code-b
 assert.match(styles, /\.v3-protocol\s*\{/, "The v3 protocol diagram must be code-built");
 assert.match(styles, /\.skip-link\s*\{/, "The skip link must have a visible style");
 assert.match(styles, /\.skip-link:focus-visible\s*\{/, "The skip link needs a keyboard-focus state");
+assert.match(notFound, /<meta name="robots" content="noindex(?:,\s*nofollow)?"/);
+assert.ok(notFound.includes(`href="${canonicalUrl}"`), "The 404 page must return to the canonical lab");
+assert.ok(robots.includes(`Sitemap: ${canonicalUrl}sitemap.xml`));
+assert.ok(sitemap.includes(`<loc>${canonicalUrl}</loc>`));
 
 assert.equal(v3Manifest.schema_version, 3);
 assert.equal(v3Manifest.bundle_kind, "eliza-open-set-bundle");
@@ -267,6 +276,23 @@ if (stageIndex >= 0) {
     selectionAuditBytes,
     "The deployed selection audit must be byte-identical to the checked-in report",
   );
+  for (const file of [
+    "404.html",
+    "app.js",
+    "engine.mjs",
+    "index.html",
+    "open-set-engine.mjs",
+    "robots.txt",
+    "selection-audit.mjs",
+    "sitemap.xml",
+    "styles.css",
+  ]) {
+    assert.deepEqual(
+      await readFile(path.join(stage, file)),
+      await readFile(path.join(siteRoot, file)),
+      `The staged ${file} must be byte-identical to its reviewed source`,
+    );
+  }
 }
 
 console.log("ELIZA Lab site and v3 bundle validation passed.");

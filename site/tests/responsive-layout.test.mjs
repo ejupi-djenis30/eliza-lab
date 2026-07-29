@@ -10,7 +10,7 @@ test("the hero links to the latest immutable release", async () => {
 
   assert.match(
     html,
-    /<a class="button button-release" href="https:\/\/github\.com\/ejupi-djenis30\/PsychologistRustBot\/releases\/latest">\s*Get the latest release/s,
+    /<a class="button button-release" href="https:\/\/github\.com\/ejupi-djenis30\/eliza-lab\/releases\/latest">\s*Get the latest release/s,
   );
 });
 
