@@ -156,11 +156,16 @@ Download the archive for your system from the
 | macOS Apple Silicon | `eliza-lab-v<version>-macos-aarch64.tar.gz` |
 | macOS Intel | `eliza-lab-v<version>-macos-x86_64.tar.gz` |
 
-Compare it with the matching `.sha256` file or `SHA256SUMS`, then verify its GitHub attestation:
+Compare it with the matching `.sha256` file or `SHA256SUMS`, then verify its GitHub attestation.
+Release `v1.5.0` was signed before the repository moved to `ejupi-djenis30/eliza-lab`, so its
+immutable provenance retains the former repository identity:
 
 ```bash
-gh attestation verify <downloaded-archive> --repo ejupi-djenis30/eliza-lab
+gh attestation verify <downloaded-archive> --repo ejupi-djenis30/PsychologistRustBot
 ```
+
+GitHub redirects that repository path to ELIZA Lab. Releases created after the rename use
+`--repo ejupi-djenis30/eliza-lab`.
 
 Extract the archive and run the included `eliza-lab` executable. Open-set bundle model `3.0.0`, the
 legacy `1.0.0` compatibility artifact and synthetic fixtures are embedded, so inference,
@@ -286,12 +291,15 @@ window on every change and once a week, so a reproducible audit cannot quietly b
 audit. Updating the pin requires reviewing the new official RustSec commit and recording its commit
 epoch in `.github/rustsec-audit-policy.json`.
 
-Verify downloaded files with:
+Verify files from `v1.5.0` and earlier with:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-gh attestation verify <downloaded-file> -R ejupi-djenis30/eliza-lab
+gh attestation verify <downloaded-file> -R ejupi-djenis30/PsychologistRustBot
 ```
+
+For releases created after the repository rename, use
+`gh attestation verify <downloaded-file> -R ejupi-djenis30/eliza-lab`.
 
 To test a proposed tag without creating one, start the **Release** workflow manually and provide
 the tag in `release_tag`, or run:
