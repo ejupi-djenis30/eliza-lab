@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="ELIZA Lab showing a local intent prediction and its inspectable feature trace." />
     <link rel="canonical" href="https://ejupi-djenis30.github.io/eliza-lab/" />
     <link rel="icon" href="assets/eliza-lab-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=1.5.0" />
+    <link rel="stylesheet" href="styles.css?v=1.5.0-2" />
     <title>ELIZA Lab — Train it. Inspect it.</title>
   </head>
   <body id="top">
@@ -42,13 +42,23 @@
         <img src="assets/eliza-lab-mark.svg" width="42" height="42" alt="" />
         <span>ELIZA <strong>LAB</strong></span>
       </a>
-      <nav aria-label="Primary navigation">
+      <nav class="primary-nav" aria-label="Primary navigation">
         <a href="#experiment">Inference</a>
         <a href="#method">Pipeline</a>
         <a href="#open-set-v3">Model report</a>
         <a href="#selection-stability">Stability</a>
         <a href="#safety">Boundaries</a>
       </nav>
+      <details class="mobile-menu">
+        <summary>Menu</summary>
+        <nav aria-label="Mobile navigation">
+          <a href="#experiment">Inference</a>
+          <a href="#method">Pipeline</a>
+          <a href="#open-set-v3">Model report</a>
+          <a href="#selection-stability">Stability</a>
+          <a href="#safety">Boundaries</a>
+        </nav>
+      </details>
       <a class="source-link" href="https://github.com/ejupi-djenis30/eliza-lab">
         Source <span aria-hidden="true">↗</span>
       </a>
@@ -431,6 +441,6 @@ cargo run --release --locked -- doctor --json</code></pre>
       <a href="https://github.com/ejupi-djenis30/eliza-lab">ELIZA Lab contributors ↗</a>
     </footer>
 
-    <script type="module" src="app.js?v=3.0.0-1"></script>
+    <script type="module" src="app.js?v=3.0.0-2"></script>
   </body>
 </html>

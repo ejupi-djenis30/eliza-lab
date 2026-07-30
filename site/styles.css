@@ -172,6 +172,10 @@ a {
   justify-self: end;
 }
 
+.mobile-menu {
+  display: none;
+}
+
 .section,
 .hero,
 footer {
@@ -1644,25 +1648,111 @@ footer > a {
 
 @media (max-width: 620px) {
   .site-header {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: 0.6rem;
     min-height: auto;
-    padding: 0.55rem 1.1rem 0;
+    padding: 0.45rem 1.1rem;
   }
 
-  .site-header nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding-bottom: 0.7rem;
+  .site-header .primary-nav {
+    display: none;
   }
 
-  .site-header nav a {
+  .site-header .brand {
+    gap: 0.45rem;
+    min-width: 0;
+    font-size: 0.76rem;
+  }
+
+  .site-header .brand img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mobile-menu {
+    position: static;
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .mobile-menu summary {
+    display: inline-flex;
+    gap: 0.45rem;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.4rem;
     min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink);
+    background: rgba(242, 236, 223, 0.92);
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    list-style: none;
+    text-transform: uppercase;
+  }
+
+  .mobile-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-menu summary::after {
+    content: "+";
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .mobile-menu[open] summary::after {
+    content: "−";
+  }
+
+  .mobile-menu nav {
+    position: absolute;
+    top: 100%;
+    right: 1.1rem;
+    left: 1.1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    width: auto;
+    padding: 0.65rem;
+    border: 1px solid var(--line);
+    border-top: 0;
+    background: rgba(242, 236, 223, 0.98);
+    box-shadow: 0 1rem 2rem rgba(25, 24, 22, 0.14);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-menu nav a {
+    justify-content: flex-start;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
     line-height: 1.2;
   }
 
+  .mobile-menu nav a:hover {
+    border-color: var(--line);
+    background: var(--paper);
+  }
+
+  .mobile-menu nav a::after {
+    display: none;
+  }
+
   section[id] {
-    scroll-margin-top: 11rem;
+    scroll-margin-top: 5rem;
   }
 
   .source-link {
+    grid-column: 3;
+    grid-row: 1;
     font-size: 0.68rem;
   }
 
