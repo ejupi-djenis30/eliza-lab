@@ -23,7 +23,7 @@ test("the public path exposes the prompt-free local workbench self-test", async 
   assert.match(html, /Inspect the implementation/);
 });
 
-test("all primary destinations remain visible in the CSS-only mobile navigation", async () => {
+test("all primary destinations remain available in the compact mobile navigation", async () => {
   const [html, styles] = await Promise.all([read("index.html"), read("styles.css")]);
 
   for (const [href, label] of [
@@ -33,20 +33,25 @@ test("all primary destinations remain visible in the CSS-only mobile navigation"
     ["#selection-stability", "Stability"],
     ["#safety", "Boundaries"],
   ]) {
-    assert.ok(html.includes(`<a href="${href}">${label}</a>`));
+    assert.equal(
+      (html.match(new RegExp(`<a href="${href}">${label}</a>`, "g")) ?? []).length,
+      2,
+    );
   }
 
+  assert.match(html, /<details class="mobile-menu">\s*<summary>Menu<\/summary>/);
+  assert.match(html, /<nav aria-label="Mobile navigation">/);
   assert.match(
     styles,
-    /@media \(max-width: 960px\)[\s\S]*?\.site-header nav\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/,
+    /@media \(max-width: 620px\)[\s\S]*?\.site-header \.primary-nav\s*\{\s*display:\s*none;/,
   );
   assert.match(
     styles,
-    /@media \(max-width: 620px\)[\s\S]*?\.site-header nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/,
+    /@media \(max-width: 620px\)[\s\S]*?\.mobile-menu\s*\{[\s\S]*?display:\s*block;/,
   );
-  assert.doesNotMatch(
+  assert.match(
     styles,
-    /@media \(max-width: 960px\)[\s\S]*?\.site-header nav\s*\{[^}]*display:\s*none;/,
+    /@media \(max-width: 620px\)[\s\S]*?\.mobile-menu nav\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?grid-template-columns:\s*1fr;/,
   );
 });
 

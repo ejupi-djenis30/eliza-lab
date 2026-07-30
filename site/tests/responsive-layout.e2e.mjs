@@ -12,7 +12,7 @@ const siteRoot = resolve(repositoryRoot, "site");
 const artifactRoot = resolve(repositoryRoot, "artifacts/eliza-open-set-v3");
 const selectionReport = resolve(repositoryRoot, "reports/selection-stability-v1.json");
 const mountPath = "/eliza-lab";
-const widths = [320, 375, 620, 621, 960, 961, 1440];
+const widths = [320, 375, 390, 620, 621, 960, 961, 1440];
 const navigationTargets = [
   "#experiment",
   "#method",
@@ -118,7 +118,7 @@ try {
     if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
   });
   const cssResponsePromise = page.waitForResponse((response) =>
-    response.url().endsWith(`${mountPath}/styles.css?v=1.5.0`),
+    response.url().endsWith(`${mountPath}/styles.css?v=1.5.0-2`),
   );
   const navigationResponse = await page.goto(baseUrl, { waitUntil: "networkidle" });
   const cssResponse = await cssResponsePromise;
@@ -126,7 +126,8 @@ try {
   assert.equal(navigationResponse?.status(), 200, "Site document must load successfully");
   assert.equal(cssResponse.status(), 200, "Site stylesheet must load successfully");
   assert.match(cssResponse.headers()["content-type"] ?? "", /^text\/css\b/);
-  assert.equal(await page.locator(".site-header nav a").count(), 5);
+  assert.equal(await page.locator(".primary-nav a").count(), 5);
+  assert.equal(await page.locator(".mobile-menu nav a").count(), 5);
   await page.waitForFunction(
     () =>
       document.querySelector(".lab-shell")?.getAttribute("aria-busy") === "false" &&
@@ -142,6 +143,24 @@ try {
   await page.evaluate(() => {
     document.documentElement.style.scrollBehavior = "auto";
   });
+  await page.locator(".mobile-menu summary").focus();
+  await page.keyboard.press("Enter");
+  assert.equal(
+    await page.locator(".mobile-menu").evaluate((element) => element.hasAttribute("open")),
+    true,
+    "Enter must open the native mobile navigation disclosure",
+  );
+  await page.keyboard.press("Escape");
+  assert.equal(
+    await page.locator(".mobile-menu").evaluate((element) => element.hasAttribute("open")),
+    false,
+    "Escape must close the mobile navigation disclosure",
+  );
+  assert.equal(
+    await page.locator(".mobile-menu summary").evaluate((element) => element === document.activeElement),
+    true,
+    "Closing the mobile navigation must return focus to its summary",
+  );
 
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
@@ -167,10 +186,11 @@ try {
       const header = document.querySelector(".site-header")?.getBoundingClientRect();
       const brand = document.querySelector(".brand")?.getBoundingClientRect();
       const source = document.querySelector(".source-link")?.getBoundingClientRect();
-      const navLinks = Array.from(document.querySelectorAll(".site-header nav a"), (element) => {
+      const primaryNavLinks = Array.from(document.querySelectorAll(".primary-nav a"), (element) => {
         const bounds = element.getBoundingClientRect();
         return { width: bounds.width, height: bounds.height };
       });
+      const menuSummary = document.querySelector(".mobile-menu summary")?.getBoundingClientRect();
       const protocolHeights = Array.from(document.querySelectorAll(".v3-protocol article"), (element) =>
         element.getBoundingClientRect().height,
       );
@@ -184,7 +204,10 @@ try {
         brandBottom: brand?.bottom ?? 0,
         sourceTop: source?.top ?? 0,
         sourceBottom: source?.bottom ?? 0,
-        navLinks,
+        primaryNavLinks,
+        menuSummary: menuSummary
+          ? { width: menuSummary.width, height: menuSummary.height }
+          : { width: 0, height: 0 },
         protocolHeights,
       };
     }, measuredSelectors);
@@ -199,28 +222,87 @@ try {
     }
 
     if (width <= 960) {
-      assert.equal(geometry.navLinks.length, 5, `${width}px: all navigation targets must remain visible`);
-      for (const [index, link] of geometry.navLinks.entries()) {
-        assert(link.width > 0, `${width}px: navigation target ${index + 1} has no width`);
-        assert(link.height >= 44, `${width}px: navigation target ${index + 1} is under 44px`);
-      }
       assert(
         Math.max(geometry.brandTop, geometry.sourceTop) <=
           Math.min(geometry.brandBottom, geometry.sourceBottom),
         `${width}px: source must share the first header row with the brand`,
       );
 
+      if (width <= 620) {
+        assert(
+          geometry.headerHeight <= 64,
+          `${width}px: collapsed sticky header is too tall (${geometry.headerHeight}px)`,
+        );
+        assert(
+          geometry.menuSummary.width >= 44 && geometry.menuSummary.height >= 44,
+          `${width}px: mobile menu summary is not a 44px target`,
+        );
+        for (const [index, link] of geometry.primaryNavLinks.entries()) {
+          assert.equal(link.width, 0, `${width}px: desktop navigation target ${index + 1} remains visible`);
+        }
+      } else {
+        assert.equal(
+          geometry.primaryNavLinks.length,
+          5,
+          `${width}px: all primary navigation targets must remain visible`,
+        );
+        for (const [index, link] of geometry.primaryNavLinks.entries()) {
+          assert(link.width > 0, `${width}px: navigation target ${index + 1} has no width`);
+          assert(link.height >= 44, `${width}px: navigation target ${index + 1} is under 44px`);
+        }
+      }
+
       for (const target of navigationTargets) {
-        const anchorState = await page.evaluate((selector) => {
-          const destination = document.querySelector(selector);
-          destination?.scrollIntoView({ block: "start" });
-          const headerBounds = document.querySelector(".site-header")?.getBoundingClientRect();
-          const targetBounds = destination?.getBoundingClientRect();
-          return {
-            headerBottom: headerBounds?.bottom ?? 0,
-            targetTop: targetBounds?.top ?? -1,
-          };
-        }, target);
+        let anchorState;
+        if (width <= 620) {
+          await page.locator(".mobile-menu summary").click();
+          const menuState = await page.evaluate(() => {
+            const links = Array.from(
+              document.querySelectorAll(".mobile-menu nav a"),
+              (element) => {
+                const bounds = element.getBoundingClientRect();
+                return { width: bounds.width, height: bounds.height };
+              },
+            );
+            return {
+              documentWidth: document.documentElement.scrollWidth,
+              viewportWidth: document.documentElement.clientWidth,
+              links,
+            };
+          });
+          assert.equal(
+            menuState.documentWidth,
+            menuState.viewportWidth,
+            `${width}px: open navigation causes document overflow`,
+          );
+          assert.equal(menuState.links.length, 5, `${width}px: mobile navigation is incomplete`);
+          for (const [index, link] of menuState.links.entries()) {
+            assert(link.width > 0, `${width}px: mobile navigation target ${index + 1} has no width`);
+            assert(link.height >= 44, `${width}px: mobile navigation target ${index + 1} is under 44px`);
+          }
+          await page.locator(`.mobile-menu nav a[href="${target}"]`).click();
+          anchorState = await page.evaluate((selector) => {
+            const headerBounds = document.querySelector(".site-header")?.getBoundingClientRect();
+            const targetBounds = document.querySelector(selector)?.getBoundingClientRect();
+            return {
+              menuOpen: document.querySelector(".mobile-menu")?.hasAttribute("open") ?? true,
+              headerBottom: headerBounds?.bottom ?? 0,
+              targetTop: targetBounds?.top ?? -1,
+            };
+          }, target);
+          assert.equal(anchorState.menuOpen, false, `${width}px: menu stays open after navigation`);
+        } else {
+          anchorState = await page.evaluate((selector) => {
+            const destination = document.querySelector(selector);
+            destination?.scrollIntoView({ block: "start" });
+            const headerBounds = document.querySelector(".site-header")?.getBoundingClientRect();
+            const targetBounds = destination?.getBoundingClientRect();
+            return {
+              headerBottom: headerBounds?.bottom ?? 0,
+              targetTop: targetBounds?.top ?? -1,
+            };
+          }, target);
+        }
         assert(
           anchorState.targetTop >= anchorState.headerBottom - 1,
           `${width}px: ${target} begins under the sticky header (${anchorState.targetTop} < ${anchorState.headerBottom})`,

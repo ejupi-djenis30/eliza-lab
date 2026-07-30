@@ -20,6 +20,15 @@ test("the skip link exposes a visible keyboard state and a usable target size", 
   assert.match(styles, /\.skip-link:focus-visible\s*\{[^}]*transform:\s*translateY\(0\);/s);
 });
 
+test("mobile navigation uses a native disclosure with a labelled landmark", async () => {
+  const html = await readFile(new URL("index.html", siteRoot), "utf8");
+
+  assert.match(
+    html,
+    /<details class="mobile-menu">\s*<summary>Menu<\/summary>\s*<nav aria-label="Mobile navigation">/,
+  );
+});
+
 test("the prompt limit is not delegated to UTF-16 maxlength", async () => {
   const html = await readFile(new URL("index.html", siteRoot), "utf8");
   const app = await readFile(new URL("app.js", siteRoot), "utf8");

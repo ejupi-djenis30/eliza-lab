@@ -18,6 +18,20 @@ const labShell = document.querySelector(".lab-shell");
 const gatedControls = document.querySelectorAll("[data-model-gated]");
 const v3Status = document.querySelector("[data-v3-status]");
 const selectionStatus = document.querySelector("[data-selection-status]");
+const mobileMenu = document.querySelector(".mobile-menu");
+
+mobileMenu?.querySelectorAll("a").forEach((link) => {
+  link.addEventListener("click", () => {
+    mobileMenu.removeAttribute("open");
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && mobileMenu?.hasAttribute("open")) {
+    mobileMenu.removeAttribute("open");
+    mobileMenu.querySelector("summary")?.focus();
+  }
+});
 
 let engine = null;
 let activeModel = null;
