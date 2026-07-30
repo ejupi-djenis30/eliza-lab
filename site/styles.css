@@ -120,6 +120,10 @@ a {
   text-decoration: none;
 }
 
+.site-header .brand {
+  min-height: 2.75rem;
+}
+
 .brand img {
   display: block;
 }
@@ -1502,6 +1506,17 @@ footer > a {
   justify-self: end;
   color: var(--ink);
   font-weight: 800;
+}
+
+.workbench-callout a,
+.report-limitations a,
+.selection-audit-boundary a,
+.robustness-boundary a,
+.safety-copy a,
+footer > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
 }
 
 @media (max-width: 960px) {
