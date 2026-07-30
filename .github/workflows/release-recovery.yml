@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Exact signed release tag to recover (for example v1.5.0)"
+        description: "Exact signed release tag to recover (for example v1.6.0)"
         required: true
         type: string
       release_commit:

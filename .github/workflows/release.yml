@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Optional tag to validate against Cargo.toml (for example v1.5.0)"
+        description: "Optional tag to validate against Cargo.toml (for example v1.6.0)"
         required: false
         type: string
 
