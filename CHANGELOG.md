@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 1.6.0 — 2026-07-30
+
+- Add `doctor --json`, a prompt-free self-test that verifies the embedded open-set bundle,
+  compiles the classifier and exercises its inference and safety boundaries without reading user
+  input.
+- Complete the move to the ELIZA Lab repository and Pages URL while keeping exact verification
+  instructions for immutable releases signed under the former repository identity.
+- Rework the mobile navigation, narrow-screen evidence layout and public touch targets so the full
+  technical presentation remains usable without a desktop viewport.
+- Refresh the pinned RustSec advisory database while retaining the fail-closed 14-day freshness and
+  zero-warning release policy.
+
 ## 1.5.0 — 2026-07-24
 
 - Add a typed `SelectionAuditPool` containing only the 385 train and development rows. Run eleven

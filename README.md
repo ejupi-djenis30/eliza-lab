@@ -170,7 +170,7 @@ GitHub redirects that repository path to ELIZA Lab. Releases created after the r
 Extract the archive and run the included `eliza-lab` executable. Open-set bundle model `3.0.0`, the
 legacy `1.0.0` compatibility artifact and synthetic fixtures are embedded, so inference,
 verification and retraining need no separate model download.
-The application version (`1.5.0`) and bundled model versions are intentionally independent.
+The application version (`1.6.0`) and bundled model versions are intentionally independent.
 
 ## Run it
 
@@ -271,7 +271,7 @@ GitHub Release assembled by the workflow.
 
 A release can only be published from a `v*` tag pushed for the version in `Cargo.toml`, with a dated
 section for that version in `CHANGELOG.md` and no pending text under `Unreleased`. For example,
-version `1.5.0` accepts `v1.5.0` and rejects every other tag. The workflow assembles all four native
+version `1.6.0` accepts `v1.6.0` and rejects every other tag. The workflow assembles all four native
 archives from verified file-descriptor snapshots, creates a consolidated `SHA256SUMS` file covering
 every release asset, and adds GitHub provenance attestations. The publish job independently verifies
 each attestation against this repository, workflow, tag ref, and source commit before it can touch a
@@ -318,7 +318,7 @@ To test a proposed tag without creating one, start the **Release** workflow manu
 the tag in `release_tag`, or run:
 
 ```bash
-node scripts/release-contract.mjs verify --tag v1.5.0
+node scripts/release-contract.mjs verify --tag v1.6.0
 ```
 
 ## Architecture
