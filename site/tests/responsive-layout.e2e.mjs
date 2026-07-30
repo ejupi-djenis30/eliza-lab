@@ -118,7 +118,7 @@ try {
     if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
   });
   const cssResponsePromise = page.waitForResponse((response) =>
-    response.url().endsWith(`${mountPath}/styles.css?v=1.5.0-2`),
+    response.url().endsWith(`${mountPath}/styles.css?v=1.5.0-3`),
   );
   const navigationResponse = await page.goto(baseUrl, { waitUntil: "networkidle" });
   const cssResponse = await cssResponsePromise;
@@ -194,6 +194,32 @@ try {
       const protocolHeights = Array.from(document.querySelectorAll(".v3-protocol article"), (element) =>
         element.getBoundingClientRect().height,
       );
+      const undersizedPublicTargets = Array.from(
+        document.querySelectorAll("a, button, input, summary"),
+        (element) => {
+          if (
+            element.tagName !== "SUMMARY"
+            && element.closest("details:not([open])")
+          ) {
+            return null;
+          }
+          const bounds = element.getBoundingClientRect();
+          if (bounds.width === 0 || bounds.height === 0) return null;
+          return {
+            label:
+              element.getAttribute("aria-label")
+              ?? element.textContent?.trim()
+              ?? element.getAttribute("placeholder")
+              ?? element.tagName,
+            width: bounds.width,
+            height: bounds.height,
+          };
+        },
+      ).filter(
+        (target) =>
+          target !== null
+          && (target.width < 44 || target.height < 44),
+      );
       return {
         viewportWidth,
         documentWidth: document.documentElement.scrollWidth,
@@ -209,6 +235,7 @@ try {
           ? { width: menuSummary.width, height: menuSummary.height }
           : { width: 0, height: 0 },
         protocolHeights,
+        undersizedPublicTargets,
       };
     }, measuredSelectors);
 
@@ -219,6 +246,14 @@ try {
       assert(box.width > 0 && box.height > 0, `${width}px: ${box.selector} has no geometry`);
       assert(box.left >= -1, `${width}px: ${box.selector} crosses the left edge`);
       assert(box.right <= geometry.viewportWidth + 1, `${width}px: ${box.selector} crosses the right edge`);
+    }
+
+    if (width === 320 || width === 390) {
+      assert.deepEqual(
+        geometry.undersizedPublicTargets,
+        [],
+        `${width}px: every visible public action must be at least 44px in both dimensions`,
+      );
     }
 
     if (width <= 960) {
@@ -319,6 +354,11 @@ try {
     }
   }
 
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    "Responsive navigation and resizing must not emit browser runtime errors",
+  );
   console.log(`Responsive site validation passed at ${widths.length} viewport widths.`);
 } finally {
   await browser.close();
