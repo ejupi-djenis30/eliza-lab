@@ -7,8 +7,8 @@
   },
   "database": {
     "url": "https://github.com/RustSec/advisory-db.git",
-    "commit": "7c7ccac53056b87f69ac677f15ea2d9a98a6f8e2",
-    "commitEpoch": 1785338230,
+    "commit": "8a1eb4f933fb5821add5b4e98601ebd90b8b3538",
+    "commitEpoch": 1788805170,
     "maximumAgeDays": 14
   },
   "deny": [

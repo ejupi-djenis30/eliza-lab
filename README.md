@@ -107,6 +107,15 @@ printf '%s\n' '{"id":"sample-1","text":"Today I feel calm"}' \
   | cargo run --locked -- infer-batch --bundle artifacts/eliza-open-set-v3
 ```
 
+Batch IDs must be unique ASCII identifiers (letters, digits, `_` and `-`, at most 128
+bytes); text must contain 1–512 Unicode characters with non-whitespace content. The
+reader accepts CRLF and a final line without a newline, with limits of 100,000 physical
+lines, 18,432 bytes per line and 64 MiB total. Blank lines consume the same budgets.
+Invalid input stops immediately without draining stdin, and errors identify the physical
+line without echoing submitted values. Predictions stream as they are computed, so a
+nonzero exit status means stdout may contain only a valid prefix; do not treat it as a
+complete batch.
+
 Every v3 prediction includes calibrated probabilities and a contrastive explanation for the top
 class against the runner-up. The explanation records its bias delta and feature sum, and tests
 verify that they reconstruct the exact top-two logit margin.

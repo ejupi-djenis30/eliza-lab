@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { expectedReleaseFileNames } from "../release-contract.mjs";
+import { expectedReleaseFileNames, parseCargoPackage } from "../release-contract.mjs";
 import {
   buildLocalInventory,
   GitHubApiClient,
@@ -30,12 +30,19 @@ function sourceReceiptLine(releaseId, timestamp = "2026-07-23T09:19:28.0000000Z"
   return `${timestamp} release-publish: New draft ${releaseId} could not be uniquely rediscovered before asset mutation`;
 }
 
-function createAuthorizedRepositoryFixture() {
+function createAuthorizedRepositoryFixture({ unreleasedNotes = "" } = {}) {
   const directory = mkdtempSync(path.join(tmpdir(), "eliza-authorized-release-"));
   const manifestPath = path.join(directory, "Cargo.toml");
   const manifest = readFileSync(path.join(repositoryRoot, "Cargo.toml"), "utf8");
   writeFileSync(manifestPath, manifest, "utf8");
-  writeFileSync(path.join(directory, "CHANGELOG.md"), readFileSync(path.join(repositoryRoot, "CHANGELOG.md")));
+  // Publication scenarios need a release-ready fixture even while normal development
+  // adds pending notes to the real changelog. The pending-notes refusal is tested below.
+  const { version } = parseCargoPackage(manifest);
+  writeFileSync(
+    path.join(directory, "CHANGELOG.md"),
+    `# Changelog\n\n## Unreleased\n\n${unreleasedNotes}\n\n## ${version} — 2026-01-01\n\n- Test release.\n`,
+    "utf8",
+  );
   writeFileSync(path.join(directory, "LICENSE"), readFileSync(path.join(repositoryRoot, "LICENSE")));
   const policyPath = path.join(directory, "release-policy.json");
   writeFileSync(policyPath, `${JSON.stringify({
@@ -769,6 +776,21 @@ test("fails closed before any GitHub API call while publication has no approved 
     /publication is disabled until a license is selected/u,
   );
   assert.equal(api.calls.length, 0);
+});
+
+test("pending changelog notes block publication before any GitHub API call", async () => {
+  const pendingRepository = createAuthorizedRepositoryFixture({
+    unreleasedNotes: "- Work that has not been released.",
+  });
+  const api = new FakeGitHubApi();
+  await assert.rejects(
+    publishWith(api, createReleaseAssets(), {
+      manifestPath: pendingRepository.manifestPath,
+      publicationPolicyPath: pendingRepository.policyPath,
+    }),
+    /still contains unreleased changes/u,
+  );
+  assert.deepEqual(api.calls, []);
 });
 
 test("discovers an authorized draft through the authenticated paginated release listing", async () => {
