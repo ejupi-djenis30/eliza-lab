@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Make batch inference stop immediately on oversized input instead of draining an
+  unbounded line. Count blank lines toward physical-line and total-byte budgets, reject
+  duplicate IDs, and report physical error locations without echoing submitted values.
+- Refresh the pinned official RustSec database while preserving the 14-day freshness
+  limit and zero-warning audit policy.
+
 ## 1.6.0 — 2026-07-30
 
 - Add `doctor --json`, a prompt-free self-test that verifies the embedded open-set bundle,

@@ -4809,38 +4809,94 @@ struct BatchOutput<'a> {
     prediction: OpenSetPrediction,
 }
 
+#[derive(Clone, Copy)]
+struct BatchLimits {
+    maximum_rows: usize,
+    maximum_physical_lines: usize,
+    maximum_line_bytes: usize,
+    maximum_total_bytes: usize,
+}
+
+const DEFAULT_BATCH_LIMITS: BatchLimits = BatchLimits {
+    maximum_rows: MAX_EXAMPLES,
+    maximum_physical_lines: MAX_EXAMPLES,
+    maximum_line_bytes: MAX_JSONL_BYTES,
+    maximum_total_bytes: 64 * 1024 * 1024,
+};
+
+/// Streams bounded JSONL predictions. Errors stop immediately, without draining the input.
+/// A writer can contain a valid prefix after failure; callers must check the result before
+/// treating its contents as a complete batch. Diagnostics never include submitted values.
 pub fn predict_jsonl(
     runtime: &CompiledModel,
     reader: &mut impl BufRead,
     writer: &mut impl Write,
 ) -> Result<usize, MlError> {
+    predict_jsonl_with_limits(runtime, reader, writer, DEFAULT_BATCH_LIMITS)
+}
+
+fn predict_jsonl_with_limits(
+    runtime: &CompiledModel,
+    reader: &mut impl BufRead,
+    writer: &mut impl Write,
+    limits: BatchLimits,
+) -> Result<usize, MlError> {
     let mut count = 0usize;
+    let mut physical_lines = 0usize;
+    let mut total_bytes = 0usize;
+    let mut ids = HashSet::new();
     let mut line = String::new();
     loop {
         line.clear();
-        let bytes = reader
-            .take((MAX_JSONL_BYTES + 1) as u64)
-            .read_line(&mut line)?;
+        // Probe at most one byte beyond either remaining budget. Never drain a
+        // rejected line: stdin may be an unending stream with no next newline.
+        let remaining_bytes = limits.maximum_total_bytes.saturating_sub(total_bytes);
+        let read_limit = limits.maximum_line_bytes.min(remaining_bytes) + 1;
+        let bytes = reader.take(read_limit as u64).read_line(&mut line)?;
         if bytes == 0 {
             break;
         }
-        if bytes > MAX_JSONL_BYTES {
-            if !line.ends_with('\n') {
-                drain_to_newline(reader)?;
-            }
+        physical_lines += 1;
+        if physical_lines > limits.maximum_physical_lines {
             return Err(MlError::InvalidDataset(format!(
-                "JSONL line {} exceeds the input boundary",
-                count + 1
+                "JSONL input exceeds {} physical lines",
+                limits.maximum_physical_lines
             )));
         }
+        if bytes > limits.maximum_line_bytes {
+            return Err(MlError::InvalidDataset(format!(
+                "JSONL line {physical_lines} exceeds the input boundary"
+            )));
+        }
+        if bytes > remaining_bytes {
+            return Err(MlError::InvalidDataset(format!(
+                "JSONL input exceeds the {} byte total boundary",
+                limits.maximum_total_bytes
+            )));
+        }
+        total_bytes += bytes;
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
         }
-        enforce_batch_capacity(count)?;
-        let input: BatchInput = serde_json::from_str(trimmed)?;
-        validate_identifier(&input.id, "batch id", count + 1)?;
-        validate_text(&input.text, count + 1, "batch")?;
+        if count >= limits.maximum_rows {
+            return Err(MlError::InvalidDataset(format!(
+                "JSONL input exceeds {} rows",
+                limits.maximum_rows
+            )));
+        }
+        let input: BatchInput = serde_json::from_str(trimmed).map_err(|_| {
+            MlError::InvalidDataset(format!(
+                "JSONL line {physical_lines} does not match the required object schema"
+            ))
+        })?;
+        validate_identifier(&input.id, "batch id", physical_lines)?;
+        validate_text(&input.text, physical_lines, "batch")?;
+        if !ids.insert(input.id.clone()) {
+            return Err(MlError::InvalidDataset(format!(
+                "JSONL line {physical_lines} repeats a batch id"
+            )));
+        }
         serde_json::to_writer(
             &mut *writer,
             &BatchOutput {
@@ -4852,30 +4908,6 @@ pub fn predict_jsonl(
         count += 1;
     }
     Ok(count)
-}
-
-fn enforce_batch_capacity(processed_rows: usize) -> Result<(), MlError> {
-    if processed_rows >= MAX_EXAMPLES {
-        return Err(MlError::InvalidDataset(format!(
-            "JSONL input exceeds {MAX_EXAMPLES} rows"
-        )));
-    }
-    Ok(())
-}
-
-fn drain_to_newline(reader: &mut impl BufRead) -> Result<(), MlError> {
-    loop {
-        let buffer = reader.fill_buf()?;
-        if buffer.is_empty() {
-            return Ok(());
-        }
-        if let Some(position) = buffer.iter().position(|byte| *byte == b'\n') {
-            reader.consume(position + 1);
-            return Ok(());
-        }
-        let consumed = buffer.len();
-        reader.consume(consumed);
-    }
 }
 
 fn reject_cross_dataset_overlap(
@@ -6071,7 +6103,102 @@ mod tests {
         let error =
             predict_jsonl(&runtime, &mut oversized.as_bytes(), &mut Vec::new()).unwrap_err();
         assert!(error.to_string().contains("exceeds the input boundary"));
-        assert!(enforce_batch_capacity(MAX_EXAMPLES - 1).is_ok());
-        assert!(enforce_batch_capacity(MAX_EXAMPLES).is_err());
+    }
+
+    #[test]
+    fn jsonl_batch_stops_at_byte_limits_without_draining() {
+        let runtime = embedded_bundle().unwrap().compile().unwrap();
+        let limits = BatchLimits {
+            maximum_line_bytes: 32,
+            maximum_total_bytes: 100,
+            ..DEFAULT_BATCH_LIMITS
+        };
+        let mut reader = std::io::Cursor::new(vec![b'x'; 10_000]);
+        let mut output = Vec::new();
+        let error =
+            predict_jsonl_with_limits(&runtime, &mut reader, &mut output, limits).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("line 1 exceeds the input boundary"));
+        assert_eq!(reader.position(), 33);
+        assert!(output.is_empty());
+
+        // Many short blank lines must also exhaust a total-byte budget; only one
+        // extra byte is consumed to establish that the stream is too large.
+        let mut reader = std::io::Cursor::new(b" \n".repeat(100));
+        let limits = BatchLimits {
+            maximum_total_bytes: 10,
+            ..limits
+        };
+        let error =
+            predict_jsonl_with_limits(&runtime, &mut reader, &mut output, limits).unwrap_err();
+        assert!(error.to_string().contains("10 byte total boundary"));
+        assert_eq!(reader.position(), 11);
+        assert!(output.is_empty());
+    }
+
+    #[test]
+    fn jsonl_batch_counts_blank_lines_and_accepts_exact_limits() {
+        let runtime = embedded_bundle().unwrap().compile().unwrap();
+        let mut reader = std::io::Cursor::new(b"\n".repeat(MAX_EXAMPLES + 20));
+        let error = predict_jsonl(&runtime, &mut reader, &mut Vec::new()).unwrap_err();
+        assert!(error.to_string().contains("100000 physical lines"));
+        assert_eq!(reader.position(), (MAX_EXAMPLES + 1) as u64);
+
+        let input = b" \r\n{\"id\":\"row-1\",\"text\":\"Today I feel calm\"}";
+        let limits = BatchLimits {
+            maximum_rows: 1,
+            maximum_physical_lines: 2,
+            maximum_line_bytes: input.len() - 3,
+            maximum_total_bytes: input.len(),
+        };
+        let mut output = Vec::new();
+        let count =
+            predict_jsonl_with_limits(&runtime, &mut &input[..], &mut output, limits).unwrap();
+        assert_eq!(count, 1);
+        let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+        assert_eq!(value["id"], "row-1");
+    }
+
+    #[test]
+    fn jsonl_batch_reports_physical_lines_without_echoing_invalid_input() {
+        let runtime = embedded_bundle().unwrap().compile().unwrap();
+        for invalid in [
+            r#"{"id":"row-1","text":"private prompt","private field":1}"#,
+            r#"{"id":"row-1","text":"private prompt","text":"duplicate"}"#,
+            r#"{"id":"row-1","text":{"private prompt":true}}"#,
+            r#"{"id":"row-1","text":"private prompt""#,
+        ] {
+            let input = format!("\n\r\n{invalid}\n");
+            let mut output = Vec::new();
+            let error = predict_jsonl(&runtime, &mut input.as_bytes(), &mut output).unwrap_err();
+            let diagnostic = error.to_string();
+            assert!(diagnostic.contains("line 3 does not match the required object schema"));
+            assert!(!diagnostic.contains("private"));
+            assert!(!diagnostic.contains("row-1"));
+            assert!(output.is_empty());
+        }
+    }
+
+    #[test]
+    fn jsonl_batch_rejects_duplicate_ids_and_leaves_only_a_valid_prefix() {
+        let runtime = embedded_bundle().unwrap().compile().unwrap();
+        let row = "{\"id\":\"row-1\",\"text\":\"Today I feel calm\"}\n";
+        let input = format!("{row}\n{row}");
+        let mut output = Vec::new();
+        let error = predict_jsonl(&runtime, &mut input.as_bytes(), &mut output).unwrap_err();
+        assert!(error.to_string().contains("line 3 repeats a batch id"));
+        assert!(!error.to_string().contains("row-1"));
+        assert_eq!(output.iter().filter(|byte| **byte == b'\n').count(), 1);
+
+        let mut output = Vec::new();
+        let limits = BatchLimits {
+            maximum_rows: 1,
+            ..DEFAULT_BATCH_LIMITS
+        };
+        let error = predict_jsonl_with_limits(&runtime, &mut input.as_bytes(), &mut output, limits)
+            .unwrap_err();
+        assert!(error.to_string().contains("exceeds 1 rows"));
+        assert_eq!(output.iter().filter(|byte| **byte == b'\n').count(), 1);
     }
 }

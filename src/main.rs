@@ -437,6 +437,8 @@ fn infer_batch_command(arguments: &[String]) -> Result<(), Box<dyn Error>> {
                 println!(
                     "Usage: eliza-lab infer-batch [--bundle PATH]\n\
                      Reads bounded JSONL objects with `id` and `text` from stdin and writes one prediction per line.\n\
+                     IDs must be unique. Limits: 100,000 physical lines, 18,432 bytes per line, 64 MiB total.\n\
+                     Blank lines count toward the limits. A failed batch may have written a valid prefix.\n\
                      Without --bundle, the verified v3 bundle embedded in the release binary is used."
                 );
                 return Ok(());
