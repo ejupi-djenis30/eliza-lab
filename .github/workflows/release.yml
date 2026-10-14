@@ -154,7 +154,7 @@ jobs:
             --output "$SBOM_PATH"
 
       - name: Upload verified supply-chain evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-evidence
           path: release-evidence
@@ -250,7 +250,7 @@ jobs:
           --legacy-model models/eliza-intent-v1.json
 
       - name: Upload packaged binary
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: binary-${{ matrix.target }}
           path: release-assets
@@ -299,7 +299,7 @@ jobs:
           --tag "$VALIDATION_TAG"
 
       - name: Upload verified release inventory
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: verified-release-assets
           path: release-assets
